@@ -24,18 +24,18 @@
 ; ------------------------
 
 ; DEFINES INFORMATION
-    .equ    CHAR_a, 'a' ; 0x61
-    .equ    CHAR_z, 'z' ; 0x41
+    .equ    CHAR_a, 'a'     ; 0x61
+    .equ    CHAR_z, 'z'     ; 0x41
     .equ    CHAR_A, 'A' 
     .equ    CHAR_E, 'E' 
     .equ    CHAR_I, 'I' 
     .equ    CHAR_O, 'O' 
     .equ    CHAR_U, 'U' 
-    ;.equ    CHAR_Aa, 0xFFE0 ; A-a
-    .equ    CHAR_aA, 0x20 ; a-A
+    .equ    CHAR_Aa_a, 0xFF ; A-a Parte alta
+    .equ    CHAR_Aa_b, 0xE0 ; A-a Parte baixa
     .equ    CHAR_END, 0
     .equ    DIM, 3
-    .equ    IDX, 1
+    .equ    IDX, 0xFF       ; -1
     .equ    NVOWEL_IDX, 5
     .equ    SIZE, 6
 
@@ -110,14 +110,15 @@ text4_address:
 to_upper:
     mov r1, CHAR_a              ; r1 = 'a'
     mov r2, CHAR_z              ; r2 = 'z'
-    mov r3, CHAR_aA             ; r3 = ('a' - 'A')
+    mov r3, CHAR_Aa_b           ; r3 = ('A' - 'a') parte baixa
+    movt r3, CHAR_Aa_a          ; r3 = ('A' - 'a') parte alta
 
     if_func_to_upper:
     cmp r0, r1                  ; if c >= 'a'
     blo if_func_to_upper_end
     cmp r0, r2                  ; if c <= 'z'
-    bge if_func_to_upper_end
-    add r0, r0, r3              ; uc = c + ('A' - 'a') -> ('a' - 'A') segundo a tabela ASCII
+    bhs if_func_to_upper_end
+    add r0, r0, r3              ; uc = c + ('A' - 'a') 
 
     if_func_to_upper_end:
 
@@ -129,7 +130,7 @@ to_upper:
 ;    - Letra maíuscula
 ;    - Número
 ;char test_upper{
-;    for (i=0, i<DIM, i++) {
+;    for (uint8_t i=0, i < uint8_t DIM, i++) {
 ;        to_upper (a[i]);
 ;    }
 ;}
@@ -146,7 +147,7 @@ test_upper:
    
     for_test_upper:
     cmp r4, r5              ; i - DIM
-    bge for_test_upper_end  ; i >= DIM
+    bhs for_test_upper_end  ; i >= DIM
     ldr r6, addr_var_char   ; r2 = a
     ldrb r0, [r6, r4]       ; r0 = a[i]
     bl  to_upper
@@ -228,8 +229,8 @@ which_vowel:
     b   which_vowel_switch_end
 
     which_vowel_switch_default:
-    mov r0, 0xFF ; -1
-    movt r0, 0xFF ; -1
+    mov r0, IDX  ; -1
+    movt r0, IDX ; -1
 
     which_vowel_switch_end:
     
@@ -267,12 +268,12 @@ vowel_histogram:
     mov r4, r0                      ; r4 = histogram[] (histogram_addr)
     mov r5, r1                      ; r5 = str[] (str_addr)
     mov r6, #0                      ; i = 0
-    mov r8, 0xFF                    ; -1
-    movt r8, 0xFF                   ; -1
+    mov r8, IDX                     ; -1
+    movt r8, IDX                    ; -1
     mov r10, CHAR_END               ; r10 = '/0'
 
     vowel_histogram_while:
-    ldr r9, [r5, r6]                ; r9 = str[i]
+    ldrb r9, [r5, r6]               ; r9 = str[i]
 
     mov r11, r6                     ; temp = i
     mov r6, r9                      ; i = str[i]

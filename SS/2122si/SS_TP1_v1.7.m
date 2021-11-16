@@ -117,7 +117,7 @@ x2t = x0t * sign(t-1);
 x3t = x1t + x2t;
 
 % Cálculo do produto interno
-prod_00 = double(int(x0t * x0t,t,0,2);  % < x0(t), x0(t) >
+prod_00 = double(int(x0t * x0t,t,0,2));  % < x0(t), x0(t) >
 prod_01 = double(int(x0t * x1t,t,0,2));  % < x0(t), x1(t) >
 prod_02 = double(int(x0t * x2t,t,0,2));  % < x0(t), x2(t) >
 prod_03 = double(int(x0t * x3t,t,0,2));  % < x0(t), x3(t) >
