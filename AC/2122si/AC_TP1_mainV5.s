@@ -12,11 +12,11 @@
 ; 1.
 ;  a) Para implementar a variável UC, o registo R1 é o mais indicado. Usar registos de R4 a R12 é necessário recorrer à pilha, gastando memória desnecessariamente.
 ;  c) Cada instrução do P16 ocupa 16 bits. A função, implementada da maneira que está, usa 14 instruções, ou seja, 224 bits. São 28 bytes ocupados.
-;
+; 
 ; 2.
 ;  a) A afirmação é verdadeira pois apenas precisamos de recorrer à pilha se usarmos registos para além do R3 (R4 a R12).
 ;  c) O valor -1 é apenas um valor fora do intervalo, desde que tome qualquer valor diferente do intervalo [0, 4] o identificador estaria correto.
-;
+; 
 ; 3.
 ;  a) Para implementar a constante NVOWEL_IDX podemos definir a variável com uma constante usando o ".equ NVOWEL_IDX,#valor" ou podemos simplesmente declarar a variável na secção data.
 ;   Usando o ".equ" não existe penalização de memória pelo que todas as instâncias de "NVOWEL_IDX" serão substituídas pelo valor atribuído.
@@ -26,20 +26,20 @@
 ; DEFINES INFORMATION
     .equ    CHAR_a, 'a' ; 0x61
     .equ    CHAR_z, 'z' ; 0x41
-    .equ    CHAR_A, 'A'
-    .equ    CHAR_E, 'E'
-    .equ    CHAR_I, 'I'
-    .equ    CHAR_O, 'O'
-    .equ    CHAR_U, 'U'
+    .equ    CHAR_A, 'A' 
+    .equ    CHAR_E, 'E' 
+    .equ    CHAR_I, 'I' 
+    .equ    CHAR_O, 'O' 
+    .equ    CHAR_U, 'U' 
     ;.equ    CHAR_Aa, 0xFFE0 ; A-a
     .equ    CHAR_aA, 0x20 ; a-A
     .equ    CHAR_END, 0
     .equ    DIM, 3
-    .equ    IDX, 0xFF ; -1
+    .equ    IDX, 1
     .equ    NVOWEL_IDX, 5
     .equ    SIZE, 6
 
-; SECTION STARTUP
+; SECTION STARTUP    
     .section startup
         b   _start
         b   .
@@ -56,12 +56,12 @@ addr_stack:
     .text
 main:
     push lr
-
+    
     ;vowel_histogram (histogram1, text1);
     ldr r0, histogram1_address
     ldr r1, text1_address
     bl  vowel_histogram
-
+    
     ;vowel_histogram (histogram2, text2);
     ldr r0, histogram2_address
     ldr r1, text1_address
@@ -77,7 +77,7 @@ main:
     ldr r1, text1_address
     bl  vowel_histogram
 
-    pop pc
+    pop pc  
 
 histogram1_address:
     .word   histogram1
@@ -140,10 +140,10 @@ test_upper:
     push    r4
     push    r5
     push    r6
-
+    
     mov r4, #0              ; i = 0
     mov r5, DIM             ; r5 = DIM
-
+   
     for_test_upper:
     cmp r4, r5              ; i - DIM
     bge for_test_upper_end  ; i >= DIM
@@ -192,7 +192,7 @@ which_vowel:
     mov r1, CHAR_E
     cmp r0, r1
     beq which_vowel_switch_E
-
+    
     mov r1, CHAR_I
     cmp r0, r1
     beq which_vowel_switch_I
@@ -232,7 +232,7 @@ which_vowel:
     movt r0, 0xFF ; -1
 
     which_vowel_switch_end:
-
+    
     pop pc
 
 ; Função vowel_histogram
@@ -251,7 +251,7 @@ which_vowel:
 ;        i++;
 ;    }
 ;}
-;   Registos: r0 = r4 = histogram[] // r1 = r5 = str[] // r0 = idx // r6 = i // r7 = '/0' // r8 = temp (-1) // r9 = str[i] // r10 = histogram[value]
+;   Registos: r0 = r4 = histogram[] // r1 = r5 = str[] // r0 = idx // r6 = i // r10 = '/0' // r8 = temp (-1) // r9 = str[i] // r7 = histogram[value] // r11 = temp (LDR e ADD precisam de rn a 3 bits)
 ;   Registos: r0, r1, r2, r3 terão de ser salvos porque a função to_upper há-de estragá-los
 vowel_histogram:
     push    lr
@@ -262,33 +262,42 @@ vowel_histogram:
     push    r8
     push    r9
     push    r10
+    push    r11
 
     mov r4, r0                      ; r4 = histogram[] (histogram_addr)
     mov r5, r1                      ; r5 = str[] (str_addr)
     mov r6, #0                      ; i = 0
-    mov r7, CHAR_END                ; r7 = '/0'
-    mov r8, 0xFF                    ; temp = -1
-    movt r8, 0xFF                   ; temp = -1
+    mov r8, 0xFF                    ; -1
+    movt r8, 0xFF                   ; -1
+    mov r10, CHAR_END               ; r10 = '/0'
 
     vowel_histogram_while:
     ldr r9, [r5, r6]                ; r9 = str[i]
-    cmp r7, CHAR_END                ; Comparar str[i] com '\0'
+
+    mov r11, r6                     ; temp = i
+    mov r6, r9                      ; i = str[i]
+
+    cmp r6, r10                     ; Comparar str[i] com '\0'
     beq vowel_histogram_while_end
+
+    mov r9, r6                      ; str[i] = i
+    mov r6, r11                     ; i = temp
+
     mov r0, r9                      ; idx = str[i]
     bl  which_vowel
 
     vowel_histogram_if:
-    cmp r0, r8                      ; Comparar idx com -1
+    cmp r0, r8                     ; Comparar idx com -1
     bne vowel_histogram_if_else
-    ldrb r10, [r4, NVOWEL_IDX]      ; Basta ir ao vetor na posição de NVOWEL_IDX que é sempre fixo (not a vowel)
-    add r10, r10, #1                ; histogram[NVOWEL_IDX]++
-    strb r10, [r4, NVOWEL_IDX]      ; Guardar na memória o valor de r10 em histogram[nvowel_idx]
+    ldrb r7, [r4, NVOWEL_IDX]      ; Basta ir ao vetor na posição de NVOWEL_IDX que é sempre fixo (not a vowel)
+    add r7, r7, #1                ; histogram[NVOWEL_IDX]++
+    strb r7, [r4, NVOWEL_IDX]      ; Guardar na memória o valor de r10 em histogram[nvowel_idx]
     b   vowel_histogram_if_end
 
     vowel_histogram_if_else:
-    ldrb r10, [r4, r0]               ; Aqui é necessário ir ao vetor acedendo a cada posição de IDX respetivamente (vowels a,e,i,o,u)
-    add r10, r10, #1                 ; histogram[idx]++
-    strb r10, [r4, r0]               ; Guardar na memória o valor de r10 em histogram[idx]
+    ldrb r7, [r4, r0]               ; Aqui é necessário ir ao vetor acedendo a cada posição de IDX respetivamente (vowels a,e,i,o,u)
+    add r7, r7, #1                  ; histogram[idx]++
+    strb r7, [r4, r0]               ; Guardar na memória o valor de r10 em histogram[idx]
     b   vowel_histogram_if_end
 
     vowel_histogram_if_end:
@@ -330,5 +339,4 @@ histogram4:
     .section    .stack
     .space  1024
 stack_top:
-
 
