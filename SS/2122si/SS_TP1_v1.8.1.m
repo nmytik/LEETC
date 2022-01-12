@@ -1,7 +1,8 @@
 %{
-    Trabalho Prático 1
+    Trabalho Prático 1 - Sinais e Sistemas
     
-    Grupo:
+    Turma: LT21N
+    Grupo: 0.1
         Nuno Brito - A46948
         Tiago Moreno - A28421
         Rafael Romão - A48863
