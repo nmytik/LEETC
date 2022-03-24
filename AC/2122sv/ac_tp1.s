@@ -54,17 +54,31 @@ addr_stack:
 ;           while(1);
 ;       }
 ;----------------------------------------------------------------
-;   Registos:
+;   Registos: r0 - array1, array2 // r1 - ARRAY_SIZE
+;             r4 - avg1 // r5 - avg2
 ;----------------------------------------------------------------
     .text
 main:
     push lr
 
-    ; TODO: avg1 avg2
+    ldr r0, array1_addr ; Carregar endereço do array1
+    mov r1, ARRAY_SIZE
+    bl  function_average
+    mov r4, r0  ; avg1 = average
+
+    ldr r0, array2_addr ; Carregar endereço do array2
+    mov r1, ARRAY_SIZE
+    bl  function_average
+    mov r5, r0  ; avg2 = average
 
     b   .   ; // while(1);
     
     pop pc
+
+array1_addr:
+    .word   array1
+array2_addr:
+    .word   array2
 
 ;----------------------------------------------------------------
 ;   Função: average
@@ -93,13 +107,17 @@ main:
 ;        return avg;
 ;    }
 ;----------------------------------------------------------------
-;   Registos:
+;   Registos: r0 - a[] // r1 - n
 ;----------------------------------------------------------------
+function_average:
+    push lr
+
+    pop pc  ; Função não folha
 
 ;----------------------------------------------------------------
 ;   Função: summation
 ;----------------------------------------------------------------
-;    int16_t summation(int8_t a [], uint16_t n){
+;    int16_t summation(int8_t a[], uint16_t n){
 ;        uint8_t error = 0;
 ;        int16_t acc = 0;
 ;
@@ -117,8 +135,11 @@ main:
 ;        return acc ;
 ;    }
 ;----------------------------------------------------------------
-;   Registos:
+;   Registos: r0 - a[] // r1 - n
 ;----------------------------------------------------------------
+function_summation:
+
+    mov pc, lr  ; Função folha
 
 ;----------------------------------------------------------------
 ;   Função: udiv
@@ -139,9 +160,11 @@ main:
 ;        return q;
 ;    }
 ;----------------------------------------------------------------
-;   Registos:
+;   Registos: r0 - D // r1 - d
 ;----------------------------------------------------------------
+function_udiv:
 
+    mov pc, lr  ; Função folha
 
 ;----------------------------------------------------------------
 ;   Variáveis 
