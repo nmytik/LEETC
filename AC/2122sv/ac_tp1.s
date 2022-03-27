@@ -24,9 +24,9 @@
 ;   Defines
 ;----------------------------------------------------------------
     .equ    ARRAY_SIZE, 12
-    .equ    INT8_MAX,   0xFF    ; 255
-    .equ    INT16_MIN,  0x8000  ; -32768
-    .equ    INT16_MAX,  0x7FFF  ; 32767
+    .equ    INT8_MAX,   0x7F    ; 127       -> int8_t
+    .equ    INT16_MIN,  0x8000  ; -32768    -> int16_t
+    .equ    INT16_MAX,  0x7FFF  ; 32767     -> int16_t
 
 ;----------------------------------------------------------------
 ;   Startup
@@ -54,8 +54,10 @@ addr_stack:
 ;           while(1);
 ;       }
 ;----------------------------------------------------------------
-;   Registos: r0 - array1, array2 // r1 - ARRAY_SIZE
-;             r4 - avg1 // r5 - avg2
+;   Registos: r0 - array1, array2
+;             r1 - ARRAY_SIZE
+;             r4 - avg1
+;             r5 - avg2
 ;----------------------------------------------------------------
     .text
 main:
@@ -92,7 +94,7 @@ array2_addr:
 ;        if(acc != INT16_MAX){
 ;            if(acc < 0){
 ;                neg = 1;
-;                uacc = - acc;
+;                uacc = -acc;
 ;            }else{
 ;                neg = 0;
 ;                uacc = acc;
@@ -107,11 +109,43 @@ array2_addr:
 ;        return avg;
 ;    }
 ;----------------------------------------------------------------
-;   Registos: r0 - a[] // r1 - n
+;   Registos: r0 - a[]
+;             r1 - n
+;             r4 - avg
+;             r5 - acc
+;             r6 - neg
 ;----------------------------------------------------------------
 function_average:
     push lr
 
+    mov r4, #INT8_MAX
+    bl  function_summation
+    mov r5, r0              ; acc = summation(a, n)
+
+    if_function_average_acc:
+        sub r2, r5, #INT16_MAX
+        beq if_function_average_acc_end ; acc = INT16_MAX
+
+        if_function_average_acc_inif1:
+            sub r5, r5, #0
+            beq if_function_average_acc_inif1_end  ; acc é um int logo não tem valores inferiores a 0, quando chegar a 0 acaba
+            mov r6, #1
+            mvn r5, r5
+
+        if_function_average_acc_inif1_end:
+            mov r6, #0                          ; Como acc é maior que 0 e não houve alterações, acc mantém-se igual
+
+        mov r0, r6                              ; Não estraguei R1
+        bl  function_udiv
+        
+        if_function_average_neg:
+            ; //TODO: registo_temp = 1, cmp r6 com 1 yadda yadda
+
+        if_function_average_neg_end:
+
+    if_function_average_acc_end:
+    
+    
     pop pc  ; Função não folha
 
 ;----------------------------------------------------------------
@@ -135,9 +169,55 @@ function_average:
 ;        return acc ;
 ;    }
 ;----------------------------------------------------------------
-;   Registos: r0 - a[] // r1 - n
+;   Registos: r0 - a[]
+;             r1 - n
+;             r2 - error
+;             r3 - acc
+;             r4 - i
+;             r5 - e
+;             r6 - temp
 ;----------------------------------------------------------------
 function_summation:
+    mov r2, #0
+    mov r3, #0
+    mov r4, #0  ; i = 0
+
+    for_function_summation:
+        cmp r4, r1
+        bhs for_function_summation_end
+        sub r2, r2, #0
+        bne for_function_summation_end
+
+        ldrb r5, [r0, r4]   ; e = a[i]
+        
+        if_function_summation_infor:
+            mov r6, #INT16_MIN
+            sub r6, r6, r3
+            cmp r5, r6
+            blt if_function_summation_infor_condtrue    ; Para fazer o OR na função
+            mov r6, #INT16_MAX
+            sub r6, r6, r3
+            cmp r6, r5  ; Trocar os operandos porque não existe menor ou igual no P16
+            bhs else_function_summation_infor
+
+            if_function_summation_infor_condtrue:
+            mov r2, #1
+
+        else_function_summation_infor:
+            add r3, r3, r5
+        
+        if_function_summation_infor_end:
+        add r4, r4, #1
+
+    for_function_summation_end:
+    if_function_summation_err:
+       mov  r6, #1
+       cmp  r2, r6
+       bne  if_function_summation_err_end
+       mov  r3, #INT16_MAX
+
+    if_function_summation_err_end:
+    mov r0, r3  ; returning acc
 
     mov pc, lr  ; Função folha
 
@@ -160,7 +240,8 @@ function_summation:
 ;        return q;
 ;    }
 ;----------------------------------------------------------------
-;   Registos: r0 - D // r1 - d
+;   Registos: r0 - D
+;             r1 - d
 ;----------------------------------------------------------------
 function_udiv:
 
