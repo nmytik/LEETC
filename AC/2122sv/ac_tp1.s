@@ -114,40 +114,33 @@ array2_addr:
 ;             r4 - avg
 ;             r5 - acc
 ;             r6 - neg
+;             r7 - temp
 ;----------------------------------------------------------------
 function_average:
     push lr
-
-    mov r4, #INT8_MAX
+    push r4
+    
+    mov r8, r1 ; r8 = n -> preservar para a função udiv
     bl  function_summation
-    mov r5, r0              ; acc = summation(a, n)
 
     if_function_average_acc:
-        sub r2, r5, #INT16_MAX
-        beq if_function_average_acc_end ; acc = INT16_MAX
-
-        if_function_average_acc_inif1:
-            sub r5, r5, #0
-            beq if_function_average_acc_inif1_end  ; acc é um int logo não tem valores inferiores a 0, quando chegar a 0 acaba
-            mov r6, #1
-            mvn r5, r5
-
-        if_function_average_acc_inif1_end:
-            mov r6, #0                          ; Como acc é maior que 0 e não houve alterações, acc mantém-se igual
-
-        mov r0, r6                              ; Não estraguei R1
-        bl  function_udiv
         
-        if_function_average_neg:
-            ; //TODO: registo_temp = 1, cmp r6 com 1 yadda yadda
 
-        if_function_average_neg_end:
+    mov r1, r8 ; restaurar n para r1
+    bl  function_udiv
+    mov r2, #INT8_MAX
 
-    if_function_average_acc_end:
-    
+
+
+    ldr r7, INT16_MAX_Value_addr
+    ldr r7, [r7, #0]
+
+
     
     pop pc  ; Função não folha
 
+INT16_MAX_Value_addr:
+    .word   INT16_MAX_Value
 ;----------------------------------------------------------------
 ;   Função: summation
 ;----------------------------------------------------------------
@@ -201,13 +194,15 @@ function_summation:
             bhs else_function_summation_infor
 
             if_function_summation_infor_condtrue:
-            mov r2, #1
+                mov r2, #1
+                b   if_function_summation_infor_end
 
         else_function_summation_infor:
             add r3, r3, r5
         
         if_function_summation_infor_end:
         add r4, r4, #1
+        b   for_function_summation
 
     for_function_summation_end:
     if_function_summation_err:
@@ -257,6 +252,9 @@ array_1:
 
 array_2:
     .byte   -25, -22, -17, -5, 5, 11, 12, 9, 3, -7, -19, -24
+
+INT16_MAX_Value:
+    .word   INT16_MAX
 
 ;----------------------------------------------------------------
 ;   Stack_top 
