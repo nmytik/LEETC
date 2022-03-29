@@ -235,8 +235,7 @@ function_summation:
 ;        return q;
 ;    }
 ;----------------------------------------------------------------
-;   Registos: r0 - D
-;             r1 - d
+;   Registos: r0 - D // r1 - d // r2:r3 - q // r4:r5 - shf_d // r6 - i // r7 - temp
 ;----------------------------------------------------------------
 function_udiv:
 	push r4
@@ -245,6 +244,7 @@ function_udiv:
 	push r7
 	mov r2,r0    ; int32_t q = D;
 	lsl r4,r1,#4   ; d = d * 16     ; uint32_t shf_d = ((uint32_t) d) << 16
+	adc 
 	mov r6,#0
 	mov r7,#16
 	for_udiv:
