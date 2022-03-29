@@ -119,7 +119,6 @@ array2_addr:
 function_average:
     push lr
     push r4
-    
     mov r8, r1 ; r8 = n -> preservar para a função udiv
     bl  function_summation
 
@@ -244,14 +243,15 @@ function_udiv:
 	push r6
 	push r7
 	mov r2,r0    ; int32_t q = D;
-	lsl r4,r1,#4   ; d = d * 16     ; uint32_t shf_d = ((uint32_t) d) << 16
+	mov r4,r1   ; d = d * 16     ; uint32_t shf_d = ((uint32_t) d) << 16
 	mov r6,#0
 	mov r7,#16
 	for_udiv:
 		cmp r6,r7 	; i - 16
 		bhs for_udiv_end ; i >= 16
 		lsl r2,r2,#1 ; q <<= 1 --> q = q * 2 LSL porque não é preciso ter em consideração o sinal
-		
+		lsl r3,r3,#1
+        adc r3,r3,#0 ; //TODO: substituir #0 por um registo com o valor de 0
 		sub r2,r2,r4 ; q = q - shf_d
 		if_udiv:
 			mov r7,#0 
