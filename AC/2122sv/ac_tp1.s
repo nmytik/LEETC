@@ -239,8 +239,38 @@ function_summation:
 ;             r1 - d
 ;----------------------------------------------------------------
 function_udiv:
-
-    mov pc, lr  ; Função folha
+	push r4
+	push r5
+	push r6
+	push r7
+	mov r2,r0    ; int32_t q = D;
+	lsl r4,r1,#4   ; d = d * 16     ; uint32_t shf_d = ((uint32_t) d) << 16
+	mov r6,#0
+	mov r7,#16
+	for_udiv:
+		cmp r6,r7 	; i - 16
+		bhs for_udiv_end ; i >= 16
+		lsl r2,r2,#1 ; q <<= 1 --> q = q * 2 LSL porque não é preciso ter em consideração o sinal
+		
+		sub r2,r2,r4 ; q = q - shf_d
+		if_udiv:
+			mov r7,#0 
+			cmp r2,r7 ; q - 0
+			bhs else_udiv  ; q >= 0
+			add r2,r2,r4 ; q = q + shf_d
+		else_udiv: 
+			orr r2,r2,#1 ; q |= 1
+		if_udiv_end:
+		add r6,r6,#1 ; i++
+		b for_udiv
+	for_udiv_end:
+	mov r0,r2    ; return q
+	mov r1,r3	
+	pop r4
+	pop r5
+	pop r6
+	pop r7
+	mov pc, lr  ; Função folha
 
 ;----------------------------------------------------------------
 ;   Variáveis 
