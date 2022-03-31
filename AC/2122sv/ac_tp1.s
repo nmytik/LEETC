@@ -192,8 +192,8 @@ function_summation:
             sub r6, r6, r3
             cmp r5, r6
             blt if_function_summation_infor_condtrue    ; Para fazer o OR na função
-            mov r6, #INT16_MAX&0xFF ; Igual à linha 187
-			mov r6, #INT16_MAX>>8&0xFF ; Igual à linha 188
+            mov r6, #INT16_MAX&0xFF ; Igual à linha 190
+			mov r6, #INT16_MAX>>8&0xFF ; Igual à linha 191
             sub r6, r6, r3
             cmp r6, r5  ; Trocar os operandos porque não existe menor ou igual no P16
             bhs else_function_summation_infor
@@ -214,8 +214,8 @@ function_summation:
        mov  r6, #1
        cmp  r2, r6
        bne  if_function_summation_err_end
-       mov  r3, #INT16_MAX&&0xFF ; Igual à linha 187 
-	   mov  r3, #INT16_MAX>>8&0xFF ; Igual à linha 188
+       mov  r3, #INT16_MAX&&0xFF ; Igual à linha 190 
+	   mov  r3, #INT16_MAX>>8&0xFF ; Igual à linha 191
 	   
     if_function_summation_err_end:
     mov r0, r3  ; returning acc
