@@ -171,6 +171,9 @@ INT16_MAX_Value_addr:
 ;             r6 - temp
 ;----------------------------------------------------------------
 function_summation:
+	push r4
+	push r5
+	push r6
     mov r2, #0
     mov r3, #0
     mov r4, #0  ; i = 0
@@ -184,11 +187,13 @@ function_summation:
         ldrb r5, [r0, r4]   ; e = a[i]
         
         if_function_summation_infor:
-            mov r6, #INT16_MIN
+            mov r6, #INT16_MIN&0xFF ; Mover a parte baixa do registo - Instrução mov é a 8 bits, é necessário mover a parte baixa e depois a parte alta dado que a constante é a 16 bits.
+			mov r6, #INT16_MIN>>8&0xFF ; Mover a parte alta.
             sub r6, r6, r3
             cmp r5, r6
             blt if_function_summation_infor_condtrue    ; Para fazer o OR na função
-            mov r6, #INT16_MAX
+            mov r6, #INT16_MAX&0xFF ; Igual à linha 187
+			mov r6, #INT16_MAX>>8&0xFF ; Igual à linha 188
             sub r6, r6, r3
             cmp r6, r5  ; Trocar os operandos porque não existe menor ou igual no P16
             bhs else_function_summation_infor
@@ -209,11 +214,14 @@ function_summation:
        mov  r6, #1
        cmp  r2, r6
        bne  if_function_summation_err_end
-       mov  r3, #INT16_MAX
-
+       mov  r3, #INT16_MAX&&0xFF ; Igual à linha 187 
+	   mov  r3, #INT16_MAX>>8&0xFF ; Igual à linha 188
+	   
     if_function_summation_err_end:
     mov r0, r3  ; returning acc
-
+	pop r4
+	pop r5
+	pop r6
     mov pc, lr  ; Função folha
 
 ;----------------------------------------------------------------
