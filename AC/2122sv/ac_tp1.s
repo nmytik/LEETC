@@ -11,7 +11,8 @@
 ;----------------------------------------------------------------
 ;   Respostas
 ;
-;   1b.
+;   1b. Cada instrução do P16 ocupa 16 bits. A função em questão, está a utilizar 36 instruções logo a quantidade de memória ocupada em bits é dada por:
+;		36*16 bits = 576 bits ou 576/8 = 72 bytes.
 ;
 ;   2a.
 ;   2b.
@@ -234,13 +235,14 @@ function_summation:
 ;        return q;
 ;    }
 ;----------------------------------------------------------------
-;   Registos: r0 - D // r1 - d // r2:r3 - q // r4:r5 - shf_d // r6 - i // r7 - temp
+;   Registos: r0 - D // r1 - d // r2:r3 - q // r4:r5 - shf_d // r6 - i // r7 - temp // r8 - temp2
 ;----------------------------------------------------------------
 function_udiv:
 	push r4
 	push r5
 	push r6
 	push r7
+	push r8
 	mov r2,r0    ; int32_t q = D;
 	mov r4,r1   ; d = d * 16     ; uint32_t shf_d = ((uint32_t) d) << 16
 	mov r6,#0
@@ -250,7 +252,8 @@ function_udiv:
 		bhs for_udiv_end ; i >= 16
 		lsl r2,r2,#1 ; q <<= 1 --> q = q * 2 LSL porque não é preciso ter em consideração o sinal
 		lsl r3,r3,#1
-        adc r3,r3,#0 ; //TODO: substituir #0 por um registo com o valor de 0
+		mov r8,#0
+        adc r3,r3,r8 ; 
 		sub r2,r2,r4 ; q = q - shf_d
 		if_udiv:
 			mov r7,#0 
@@ -269,6 +272,7 @@ function_udiv:
 	pop r5
 	pop r6
 	pop r7
+	pop r8
 	mov pc, lr  ; Função folha
 
 ;----------------------------------------------------------------
