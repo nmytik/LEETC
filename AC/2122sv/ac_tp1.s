@@ -23,7 +23,7 @@
 ;   3a. É sempre preferível usar um registo que não recorra ao stack de forma a melhor o desempenho. Neste programa e dependendo do sítio onde é atribuído
 ; o registo avg, é possível fazer com os dois registos. Se a implementação do código em assembly for traduzido literalmente do troço de código em C, será
 ; melhor atribuir avg ao registo R5 porque logo de seguida é chamada uma função que poderá estragar R2. Por outro lado, se atribuirmos a variável avg a R2
-; antes da linha 30 do código, então será possível usar esse registo sem qualquer preocupação dado que não há nenhum chamemento de função até ao fim da
+; antes da linha 30 do código, então será possível usar esse registo sem qualquer preocupação dado que não há nenhum chamamento de função até ao fim da
 ; função average.
 ;   3b. INT8_MAX é uma variável a 8 bits com sinal e por isso o seu valor máximo é de 127.
 ;----------------------------------------------------------------
@@ -65,7 +65,7 @@ addr_stack:
 ;----------------------------------------------------------------
 ;   Registos: r0 - array1, array2
 ;             r1 - ARRAY_SIZE
-;             r4 - avg1, array2
+;             r4 - avg1, avg2
 ;----------------------------------------------------------------
 ;   Situação: Resolvido
 ;----------------------------------------------------------------
@@ -137,30 +137,66 @@ avg2_addr:
 ;             r5 - acc
 ;             r6 - neg
 ;             r7 - temp
+;
+;   Registos: r0 - -> a[], 0
+;             r1 - -> n
+;             r2 - 1
+;             r3 - neg
+;             r4 - uavg = udiv = avg
+;             r5 - -> acc
+;             r6 - INT16_MAX
+;             r7 - acc / summation 
 ;----------------------------------------------------------------
 function_average:
-    push lr
-    push r4
-    mov r8, r1 ; r8 = n -> preservar para a função udiv
-    bl  function_summation
+	push lr
+	push r4
+    push r5
+    push r6
+    push r7
 
-    if_function_average_acc:
-        
-
-    mov r1, r8 ; restaurar n para r1
-    bl  function_udiv
-    mov r2, #INT8_MAX
-
-
-
-    ldr r7, INT16_MAX_Value_addr
-    ldr r7, [r7, #0]
-
-
+    mov r4, #INT8_MAX
     
-    pop pc  ; Função não folha
+	mov r6,  #INT16_MAX & 0xFF			; carrega parte byte baixo
+	movt r6, #INT16_MAX >> 8 & 0xFF	    ; carrega parte byte alto
+	
+	if_1:
+		bl summation
+        mov r5, r0
+		cmp r5, r6						; compara summation com int16_max
+		beq if_end_1					; caso seja igual, salta para o fim, porque o resultado vai sair fora de dominio (?)
+		if_2:	
+			mov r0, #0					; carrega r0 com 0
+			mov r2, #1					; carrega r2 com 1
+			cmp r5,r0					; compara summation com 0
+			bge if_else2				; caso seja menor que 0 (negativo), continua, caso contrario, salta para if_end_2
+			mov r3,r2					; coloca o r3 (neg) a 1, indicando que o resultado da soma é negativo.
+			mvn r5,r5					; faz o complementar da soma para o r5, para assim enviar um numero positivo para fazer divisão
+			add r5,r5,#1				; termina o complementar
+			b if_end2          			; após terminar divisão, salta para if_3
+		if_else2:
+		mov r3,r0						; coloca neg a 0 (indicando que a soma é positiva, logo pode enviar )
 
-    ; INT16_MAX_Value_addr colocado mais abaixo, usado também na função summation
+        if_end2:
+        mov r0, r5                      ; acc = r0
+		bl udiv						    ; chama a função udiv para fazer a divisão com numero positivo
+
+        mov r4, r0                      ; r4 = avg
+		
+		if_3:
+			cmp r3,r2					; r3-r2 (neg - 1)
+			bne if_end_3				; testa se neg é 0 (positivo). se positivo, salta para if_end_3, se negativo, continua
+			mvn r4,r4					; faz o complementar do resultado da média, uma vez que o summation era negativo, a media tambem será
+			add r4,r4,#1				; termina o complementar
+		if_end_3:
+	if_end_1:
+    
+    mov r0, r4  ; return avg
+
+	pop r7
+    pop r6
+    pop r5
+    pop r4
+	pop pc
 
 ;----------------------------------------------------------------
 ;   Função: summation
@@ -213,13 +249,10 @@ function_summation:
         if_function_summation_infor:
             ldr r6, INT16_MAX_Value_addr                ; Carregar valor de 16 para um registo
             ldr r6, [r6, #INDEX_0]
-                                                        ; Alternativa:
-                                                        ; mov r6, #INT16_MIN&0xFF    ; Mover parte baixa.
-			                                            ; mov r6, #INT16_MIN>>8&0xFF ; Mover parte alta.
             sub r6, r6, r3                              ; INT16 - acc
             cmp r5, r6
             blt if_function_summation_infor_condtrue    ; Para fazer o OR na função
-            ldr r6, INT16_MAX_Value_addr
+            ldr r6, INT16_MIN_Value_addr
             ldr r6, [r6, #INDEX_0]
             sub r6, r6, r3
             cmp r6, r5                                  ; Trocar os operandos porque não existe <= no P16
@@ -254,6 +287,8 @@ function_summation:
 
 INT16_MAX_Value_addr:
     .word   INT16_MAX_Value
+INT16_MIN_Value_addr:
+    .word   INT16_MIN_Value
 
 ;----------------------------------------------------------------
 ;   Função: udiv
@@ -274,7 +309,7 @@ INT16_MAX_Value_addr:
 ;        return q;
 ;    }
 ;----------------------------------------------------------------
-;   Registos: r0 - D // r1 - d // r2:r3 - q // r4:r5 - shf_d // r6 - i // r7 - temp // r8 - temp2
+;   Registos: r0 - D // r1 - d // r3:r2 - q // r5:r4 - shf_d // r6 - i // r7 - temp // r8 - temp2
 ;----------------------------------------------------------------
 function_udiv:
 	push r4
@@ -282,33 +317,46 @@ function_udiv:
 	push r6
 	push r7
 	push r8
-	mov r2,r0    ; Mover a parte alta do registo R2:R3 ; int32_t q = D;
-	;movt r3,r0  ; Mover a parte baixa do registo R2:R3  ; int32_t q = D; -- Por confirmar
+
+	mov r2, r0    ; Mover a parte alta do registo R2:R3 ; int32_t q = D;
+    movt r2, r0
 	mov r4,r1   ; Mover a parte alta do registo R4:R5    ; uint32_t shf_d = ((uint32_t) d) << 16
 	movt r5,r1 ; Mover a parte baixa do registo R4:R5    ; uint32_t shf_d = ((uint32_t) d) << 16
 	mov r6,#0
 	mov r7,#16
+
 	for_udiv:
 		cmp r6,r7 	; i - 16
 		bhs for_udiv_end ; i >= 16
-		lsl r2,r2,#1 ; q <<= 1 --> q = q * 2 LSL porque não é preciso ter em consideração o sinal
 		lsl r3,r3,#1
+		lsl r2,r2,#1 ; q <<= 1 --> q = q * 2 LSL porque não é preciso ter em consideração o sinal
 		mov r8,#0
-        adc r3,r3,r8 ; 
+        adc r3,r3,r8 ;
 		sub r2,r2,r4 ; q = q - shf_d
+        ; //TODO: sub do outro registo
+
 		if_udiv:
 			mov r7,#0 
 			cmp r2,r7 ; q - 0
-			bhs else_udiv  ; q >= 0
+            ; //TODO: ASR para determinar sinal 1 no registo mais alto (= negativo (<0)) NOVO: SE CALHAR NÃO É PRECISO!!!!!
+            and rtemp,r3,#0x80 ; verificar se é número negativo ou positivo
+			bhs else_udiv  ; q >= 0 ----------> beq!!!!! (1 com 0 = 0) salta fora
 			add r2,r2,r4 ; q = q + shf_d
+            adc r3,r3,r5
+            b   if_udiv_end
+
 		else_udiv: 
 			orr r2,r2,#1 ; q |= 1
+            orr r3,r3,#1 ; q |= 1
+
 		if_udiv_end:
 		add r6,r6,#1 ; i++
 		b for_udiv
+
 	for_udiv_end:
 	mov r0,r2    ; return q - Retorna a parte alta do registo
 	mov r1,r3	 ; return q - Retorna a parte baixa do registo
+
 	pop r4
 	pop r5
 	pop r6
