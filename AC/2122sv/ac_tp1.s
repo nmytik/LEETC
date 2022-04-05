@@ -282,8 +282,10 @@ function_udiv:
 	push r6
 	push r7
 	push r8
-	mov r2,r0    ; int32_t q = D;
-	mov r4,r1   ; d = d * 16     ; uint32_t shf_d = ((uint32_t) d) << 16
+	mov r2,r0    ; Mover a parte alta do registo R2:R3 ; int32_t q = D;
+	;movt r3,r0  ; Mover a parte baixa do registo R2:R3  ; int32_t q = D; -- Por confirmar
+	mov r4,r1   ; Mover a parte alta do registo R4:R5    ; uint32_t shf_d = ((uint32_t) d) << 16
+	movt r5,r1 ; Mover a parte baixa do registo R4:R5    ; uint32_t shf_d = ((uint32_t) d) << 16
 	mov r6,#0
 	mov r7,#16
 	for_udiv:
@@ -305,8 +307,8 @@ function_udiv:
 		add r6,r6,#1 ; i++
 		b for_udiv
 	for_udiv_end:
-	mov r0,r2    ; return q
-	mov r1,r3	
+	mov r0,r2    ; return q - Retorna a parte alta do registo
+	mov r1,r3	 ; return q - Retorna a parte baixa do registo
 	pop r4
 	pop r5
 	pop r6
