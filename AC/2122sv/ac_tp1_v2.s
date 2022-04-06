@@ -239,7 +239,7 @@ function_summation:
             ldr r6, [r6, #0]
             sub r6, r6, r3                              ; INT16 - acc
             cmp r5, r6
-            blt if_infor_condtrue_function_summation    ; Para fazer o OR na função; Nelson - Parece-me que falta qualquer coisa, porque ele só vai para a condição true se e < INT16_MAX - acc?
+            blt if_infor_condtrue_function_summation    ; Para fazer o OR na função
             ldr r6, INT16_MIN_Value_addr
             ldr r6, [r6, #0]
             sub r6, r6, r3
@@ -263,7 +263,7 @@ function_summation:
        cmp  r2, r6                                      ; Comparar error com 1
        bne  if_err_end_function_summation
        ldr  r6, INT16_MAX_Value_addr
-       ldr  r3, [r6, #INDEX_0]
+       ldr  r3, [r6, #0]
 	   
     if_err_end_function_summation:
     mov r0, r3                                          ; Retornar acc
@@ -304,6 +304,7 @@ INT16_MIN_Value_addr:
 ;             r6 - i
 ;             r7 - 16
 ;             r8 - temp
+;			  r9 - mascara
 ;----------------------------------------------------------------
 ;   Situação: Resolvido [Falta confirmação]
 ;----------------------------------------------------------------
@@ -316,12 +317,8 @@ function_udiv:
 	push r8
 
 	mov  r2, r0     ; Move D para a parte baixa do registo r3:r2 ; int32_t q = D;
-    movt r2, r0     ; Move D para a parte baixa do registo r3:r2 ; int32_t q = D;
-    mov  r3, #0     ; Preenche a zeros a parte alta do registo r3:r2
     movt r3, #0     ; Preenche a zeros a parte alta do registo r3:r2
 	mov  r5, r1     ; Mover a parte alta do registo r5:r4 ; uint32_t shf_d = ((uint32_t) d) << 16
-	movt r5, r1     ; Mover a parte alta do registo r5:r4 ; uint32_t shf_d = ((uint32_t) d) << 16
-    mov  r4, #0     ; Preenche a zeros a parte alta do registo r5:r4
     movt r4, #0     ; Preenche a zeros a parte alta do registo r5:r4
 
 	mov r6, #0      ; i = 0
@@ -337,16 +334,16 @@ function_udiv:
 		sub r2, r2, r4 ; q = q - shf_d
         sbc r3, r3, r5 ; //TODO: Confirmar se funciona Nelson - Lá está, esta não consigo confirmar, mas aparentemente seria isto.
 
-		if_udiv:
+		if_udiv: 
             lsr r8, r3, #8 ; Meter os 8 últimos bits para os primeiros 8 bits //TODO: Confirmar com o professor
-            and r8, r8, #0x80 ; verificar se é número negativo ou positivo
+            and r8, r8, #0x80 ; verificar se é número negativo ou positivo //TODO: Refazer
 			bzs else_udiv  ; q >= 0 ----------> beq!!!!! (1 com 0 = 0) salta fora!!! Nelson - LOL, BEQ=BZS :D 
 			add r2, r2, r4 ; q = q + shf_d
             adc r3, r3, r5
             b   if_end_udiv
 
 		else_udiv: 
-            ; //TODO: Confirmar se isto está correto! ; Nelson - Parece-me fazer sentido
+            ; //TODO: Refazer
 			orr  r2, r2, #0xFF ; q |= 1
             lsr  r8, r2, #8
             orr  r8, r8, #0xFF
@@ -362,9 +359,7 @@ function_udiv:
 
 	for_end_udiv:
 	mov  r0, r2    ; Return q - Retorna a parte baixa do registo
-    movt r0, r2    ; Nelson - Não entendi o porque do movt da parte baixa, não basta o mov r0,r2 e depois o movt r1,r3?
-	mov  r1, r3	  ; Return q - Retorna a parte alta do registo
-    movt r1, r3
+    movt r1, r3    ; Return q - Retorna a parte alta do registo
 
 	pop r4
 	pop r5
