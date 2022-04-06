@@ -95,9 +95,9 @@ main:
     pop pc
 
 array1_addr:
-    .word   array1
+    .word   array_1
 array2_addr:
-    .word   array2
+    .word   array_2
 avg1_addr:
     .word   avg1
 avg2_addr:
@@ -144,7 +144,7 @@ function_average:
     push r4
     push r5
 
-    bl summation
+    bl function_summation
     mov r2, #INT8_MAX                         ; Caso o beq seja verdadeiro, avg já está no sítio correto
 
 	if_function_average:
@@ -167,7 +167,7 @@ function_average:
 
         if_acc_end_function_average:
         mov r0, r4                            ; r0 = acc. r1 não foi estragado
-		bl udiv						          ; chama a função udiv para fazer a divisão com numero positivo
+		bl function_udiv						          ; chama a função udiv para fazer a divisão com numero positivo
         ; //TODO: Perguntar: uavg é 16bit mas udiv retorna um par de registos (32bit)...
         mov r2, r0                            ; r2 = avg
 		
