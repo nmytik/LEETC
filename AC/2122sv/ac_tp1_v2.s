@@ -146,15 +146,15 @@ function_average:
     mov r2, #INT8_MAX                         ; Caso o beq seja verdadeiro, avg já está no sítio correto
 
 	if_function_average:
-        mov r4, r0                            ; acc = summation
+        mov r4, r0                            ; acc = return do summation
 	    mov r3, #INT16_MAX & 0xFF			  ; carrega parte byte baixo
 	    movt r3, #INT16_MAX >> 8 & 0xFF	      ; carrega parte byte alto
-		cmp r4, r3						      ; compara acc=summation com int16_max
+		cmp r4, r3						      ; compara acc=return do summation com int16_max
 		beq if_end_function_average			  ; caso seja igual, salta para o fim, porque o resultado vai sair fora de dominio (?)
 
 		if_acc_function_average:	
 			mov r3, #0					      ; carrega r3 com 0
-			cmp r4, r3					      ; compara summation com 0
+			cmp r4, r3					      ; compara return do summation com 0
 			bge if_acc_else_function_average  ; caso seja menor que 0 (negativo), continua, caso contrario, salta para if_end_2
 			mov r5, #1 					      ; coloca o r6 (neg) a 1, indicando que o resultado da soma é negativo.
             sub r4, r3, r4                    ; uacc = 0 - acc
@@ -173,7 +173,7 @@ function_average:
             mov r3, #1
 			cmp r5, r3					      ; r5-r4 (neg - 1)
 			bne if_neg_end_function_average   ; testa se neg é 0 (positivo). se positivo, salta para if_end_3, se negativo, continua
-			mvn r2, r2					      ; faz o complementar do resultado da média, uma vez que o summation era negativo, a media tambem será
+			mvn r2, r2					      ; faz o complementar do resultado da média, uma vez que o return do summation era negativo, a media tambem será
 			add r2, r2, #1				      ; termina o complementar
 
 		if_neg_end_function_average:
@@ -239,7 +239,7 @@ function_summation:
             ldr r6, [r6, #0]
             sub r6, r6, r3                              ; INT16 - acc
             cmp r5, r6
-            blt if_infor_condtrue_function_summation    ; Para fazer o OR na função
+            blt if_infor_condtrue_function_summation    ; Para fazer o OR na função; Nelson - Parece-me que falta qualquer coisa, porque ele só vai para a condição true se e < INT16_MAX - acc?
             ldr r6, INT16_MIN_Value_addr
             ldr r6, [r6, #0]
             sub r6, r6, r3
@@ -305,6 +305,8 @@ INT16_MIN_Value_addr:
 ;             r7 - 16
 ;             r8 - temp
 ;----------------------------------------------------------------
+;   Situação: Resolvido [Falta confirmação]
+;----------------------------------------------------------------
 function_udiv:
     push lr
 	push r4
@@ -329,22 +331,22 @@ function_udiv:
 		cmp r6, r7 	; i - 16
 		bhs for_end_udiv ; i >= 16
 		lsl r3, r3, #1  ; Fazer o shift primeiro na parte alta
-		lsl r2, r2, #1 ; q <<= 1 --> q = q * 2 LSL porque não é preciso ter em consideração o sinal
+		lsl r2, r2, #1 ; Fazer o shift da parte baixa
 		mov r8, #0  
         adc r3, r3, r8 ; Adicionar a carry à parte alta do registo
 		sub r2, r2, r4 ; q = q - shf_d
-        sbc r3, r3, r5 ; //TODO: Confirmar se funciona
+        sbc r3, r3, r5 ; //TODO: Confirmar se funciona Nelson - Lá está, esta não consigo confirmar, mas aparentemente seria isto.
 
 		if_udiv:
             lsr r8, r3, #8 ; Meter os 8 últimos bits para os primeiros 8 bits //TODO: Confirmar com o professor
             and r8, r8, #0x80 ; verificar se é número negativo ou positivo
-			bzs else_udiv  ; q >= 0 ----------> beq!!!!! (1 com 0 = 0) salta fora
+			bzs else_udiv  ; q >= 0 ----------> beq!!!!! (1 com 0 = 0) salta fora!!! Nelson - LOL, BEQ=BZS :D 
 			add r2, r2, r4 ; q = q + shf_d
             adc r3, r3, r5
             b   if_end_udiv
 
 		else_udiv: 
-            ; //TODO: Confirmar se isto está correto!
+            ; //TODO: Confirmar se isto está correto! ; Nelson - Parece-me fazer sentido
 			orr  r2, r2, #0xFF ; q |= 1
             lsr  r8, r2, #8
             orr  r8, r8, #0xFF
@@ -360,7 +362,7 @@ function_udiv:
 
 	for_end_udiv:
 	mov  r0, r2    ; Return q - Retorna a parte baixa do registo
-    movt r0, r2
+    movt r0, r2    ; Nelson - Não entendi o porque do movt da parte baixa, não basta o mov r0,r2 e depois o movt r1,r3?
 	mov  r1, r3	  ; Return q - Retorna a parte alta do registo
     movt r1, r3
 
