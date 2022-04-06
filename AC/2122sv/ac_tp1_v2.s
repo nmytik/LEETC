@@ -9,10 +9,12 @@
 ; A46950    Nelson Lopes
 
 ;----------------------------------------------------------------
+;   Situação Final: COMPILADO
+;----------------------------------------------------------------
 ;   Respostas
 ;
 ;   1b. Cada instrução do P16 ocupa 16 bits. A função em questão, está a utilizar 36 instruções logo a quantidade de memória ocupada em bits é dada por:
-;		41*16 bits = 656 bits ou 656/8 = 82 bytes.
+;       41*16 bits = 656 bits ou 656/8 = 82 bytes.
 ;
 ;   2a. INT16_MIN e INT16_MAX são variáveis a 16 bits com sinal, portanto os seus valores mínimos e máximo são dados por, respetivamente, -32768 e 32767.
 ;   2b. Existem duas formas de maneira a que os seus valores sejam facilmente editáveis, por definção em .equ e por declaração de valor em memória.
@@ -35,8 +37,8 @@
     .equ    INT8_MAX,   0x7F    ; 127       -> int8_t
     .equ    INT16_MIN,  0x8000  ; -32768    -> int16_t
     .equ    INT16_MAX,  0x7FFF  ; 32767     -> int16_t
-	.equ    MASK_80,    0x8000   
-	.equ    MASK_FF,    0xFFFF
+    .equ    MASK_80,    0x8000  ; Máscara para bit de maior peso
+    .equ    MASK_FF,    0xFFFF  ; Máscara para orr bit a bit 1
 
 ;----------------------------------------------------------------
 ;   Startup
@@ -140,52 +142,51 @@ avg2_addr:
 ;   Situação: Resolvido [&Verificado]
 ;----------------------------------------------------------------
 function_average:
-	push lr
+    push lr
     push r4
     push r5
 
     bl function_summation
     mov r2, #INT8_MAX                         ; Caso o beq seja verdadeiro, avg já está no sítio correto
 
-	if_function_average:
+    if_function_average:
         mov r4, r0                            ; acc = return do summation
-	    mov r3, #INT16_MAX & 0xFF			  ; carrega parte byte baixo
-	    movt r3, #INT16_MAX >> 8 & 0xFF	      ; carrega parte byte alto
-		cmp r4, r3						      ; compara acc=return do summation com int16_max
-		beq if_end_function_average			  ; caso seja igual, salta para o fim, porque o resultado vai sair fora de dominio (?)
+        mov r3, #INT16_MAX & 0xFF             ; Carrega parte byte baixo
+        movt r3, #INT16_MAX >> 8 & 0xFF       ; Carrega parte byte alto
+        cmp r4, r3                            ; Compara acc=return do summation com int16_max
+        beq if_end_function_average           ; Caso seja igual, salta para o fim, porque o resultado vai sair fora de dominio (?)
 
-		if_acc_function_average:	
-			mov r3, #0					      ; carrega r3 com 0
-			cmp r4, r3					      ; compara return do summation com 0
-			bge if_acc_else_function_average  ; caso seja menor que 0 (negativo), continua, caso contrario, salta para if_end_2
-			mov r5, #1 					      ; coloca o r6 (neg) a 1, indicando que o resultado da soma é negativo.
+        if_acc_function_average:    
+            mov r3, #0                        ; Carrega r3 com 0
+            cmp r4, r3                        ; Compara return do summation com 0
+            bge if_acc_else_function_average  ; Caso seja menor que 0 (negativo), continua, caso contrario, salta para if_end_2
+            mov r5, #1                        ; Coloca o r6 (neg) a 1, indicando que o resultado da soma é negativo.
             sub r4, r3, r4                    ; uacc = 0 - acc
-			b if_acc_end_function_average     ; após terminar divisão, salta para if_3
+            b if_acc_end_function_average     ; Após terminar divisão, salta para if_3
 
-		if_acc_else_function_average:
-		    mov r5, #0						  ; coloca neg a 0 (indicando que a soma é positiva, logo pode enviar )
+        if_acc_else_function_average:
+            mov r5, #0                        ; Coloca neg a 0 (indicando que a soma é positiva, logo pode enviar )
 
         if_acc_end_function_average:
         mov r0, r4                            ; r0 = acc. r1 não foi estragado
-		bl function_udiv						          ; chama a função udiv para fazer a divisão com numero positivo
-        ; //TODO: Perguntar: uavg é 16bit mas udiv retorna um par de registos (32bit)...
+        bl function_udiv                      ; Chama a função udiv para fazer a divisão com numero positivo
         mov r2, r0                            ; r2 = avg
-		
-		if_neg_function_average:
+        
+        if_neg_function_average:
             mov r3, #1
-			cmp r5, r3					      ; r5-r3 (neg - 1)
-			bne if_neg_end_function_average   ; testa se neg é 0 (positivo). se positivo, salta para if_end_3, se negativo, continua
-			mvn r2, r2					      ; faz o complementar do resultado da média, uma vez que o return do summation era negativo, a media tambem será
-			add r2, r2, #1				      ; termina o complementar
+            cmp r5, r3                        ; r5-r3 (neg - 1)
+            bne if_neg_end_function_average   ; Testa se neg é 0 (positivo). se positivo, salta para if_end_3, se negativo, continua
+            mvn r2, r2                        ; Taz o complementar do resultado da média, uma vez que o return do summation era negativo, a media tambem será
+            add r2, r2, #1                    ; Termina o complementar
 
-		if_neg_end_function_average:
-	if_end_function_average:
+        if_neg_end_function_average:
+    if_end_function_average:
     
-    mov r0, r2                                ; return avg
+    mov r0, r2                                ; Return avg
 
     pop r5
     pop r4
-	pop pc
+    pop pc
 
 ;----------------------------------------------------------------
 ;   Função: summation
@@ -219,9 +220,9 @@ function_average:
 ;   Situação: Resolvido [&Verificado]
 ;----------------------------------------------------------------
 function_summation:
-	push r4
-	push r5
-	push r6
+    push r4
+    push r5
+    push r6
 
     mov r2, #0                                          ; error = 0
     mov r3, #0                                          ; acc = 0
@@ -266,14 +267,14 @@ function_summation:
        bne  if_err_end_function_summation
        ldr  r6, INT16_MAX_Value_addr
        ldr  r3, [r6, #0]
-	   
+       
     if_err_end_function_summation:
     mov r0, r3                                          ; Retornar acc
 
-	pop r4
-	pop r5
-	pop r6
-    mov pc, lr  ; Função folha
+    pop r4
+    pop r5
+    pop r6
+    mov pc, lr                                          ; Função folha
 
 INT16_MAX_Value_addr:
     .word   INT16_MAX_Value
@@ -306,66 +307,65 @@ INT16_MIN_Value_addr:
 ;             r6 - i
 ;             r7 - 16
 ;             r8 - temp
-;			    r9 - mascara
+;               r9 - mascara
 ;----------------------------------------------------------------
 ;   Situação: Resolvido [Falta confirmação]
 ;----------------------------------------------------------------
 function_udiv:
     push lr
-	push r4
-	push r5
-	push r6
-	push r7
-	push r8
+    push r4
+    push r5
+    push r6
+    push r7
+    push r8
 
-	mov  r2, r0     ; Move D para a parte baixa do registo r3:r2 ; int32_t q = D;
-    movt r3, #0     ; Preenche a zeros a parte alta do registo r3:r2
-	mov  r5, r1     ; Mover a parte alta do registo r5:r4 ; uint32_t shf_d = ((uint32_t) d) << 16
-    movt r4, #0     ; Preenche a zeros a parte alta do registo r5:r4
+    mov  r2, r0                                 ; Move D para a parte baixa do registo r3:r2 ; int32_t q = D;
+    movt r3, #0                                 ; Preenche a zeros a parte alta do registo r3:r2
+    mov  r5, r1                                 ; Mover a parte alta do registo r5:r4 ; uint32_t shf_d = ((uint32_t) d) << 16
+    movt r4, #0                                 ; Preenche a zeros a parte alta do registo r5:r4
 
-	mov r6, #0      ; i = 0
-	mov r7, #16     ; r7 = 16
+    mov r6, #0                                  ; i = 0
+    mov r7, #16                                 ; r7 = 16
 
-	for_udiv:
-		cmp r6, r7 	; i - 16
-		bhs for_end_udiv ; i >= 16
-		lsl r3, r3, #1  ; Fazer o shift primeiro na parte alta
-		lsl r2, r2, #1 ; Fazer o shift da parte baixa
-		mov r8, #0  
-        adc r3, r3, r8 ; Adicionar a carry à parte alta do registo
-		sub r2, r2, r4 ; q = q - shf_d
-        sbc r3, r3, r5 ; //TODO: Confirmar se funciona Nelson - Lá está, esta não consigo confirmar, mas aparentemente seria isto.
+    for_udiv:
+        cmp r6, r7                              ; i - 16
+        bhs for_end_udiv                        ; i >= 16
+        lsl r3, r3, #1                          ; Fazer o shift primeiro na parte alta
+        lsl r2, r2, #1                          ; Fazer o shift da parte baixa
+        mov r8, #0  
+        adc r3, r3, r8                          ; Adicionar a carry à parte alta do registo
+        sub r2, r2, r4                          ; q = q - shf_d
+        sbc r3, r3, r5                          
 
-		if_udiv: 
-            mov r8, #MASK_80 & 0xFF			  ; carrega parte byte baixo
-			movt r8, #MASK_80 >> 8 & 0xFF	      ; carrega parte byte alto
-            and r8, r3, r8 ; verificar se é número negativo ou positivo
-			bzs else_udiv  ; q >= 0 ----------> beq!!!!! (1 com 0 = 0) salta fora!!! Nelson - LOL, BEQ=BZS :D 
-			add r2, r2, r4 ; q = q + shf_d
+        if_udiv: 
+            mov r8, #MASK_80 & 0xFF             ; Carrega parte byte baixo
+            movt r8, #MASK_80 >> 8 & 0xFF       ; Carrega parte byte alto
+            and r8, r3, r8                      ; Verificar se é número negativo ou positivo
+            bzs else_udiv                       ; q >= 0 -> beq! (1 com 0 = 0) salta fora!!! Nelson - LOL, BEQ=BZS :D 
+            add r2, r2, r4                      ; q = q + shf_d
             adc r3, r3, r5
             b   if_end_udiv
 
-		else_udiv: 
-            ; //TODO: Refazer
-			mov r8, #MASK_FF & 0xFF			  ; carrega parte byte baixo
-			movt r8, #MASK_FF >> 8 & 0xFF	      ; carrega parte byte alto
-			orr  r2, r2, r8; q |= 1
-			orr  r3, r3, r8; q |= 1
+        else_udiv: 
+            mov r8, #MASK_FF & 0xFF             ; Carrega parte byte baixo
+            movt r8, #MASK_FF >> 8 & 0xFF       ; Carrega parte byte alto
+            orr  r2, r2, r8                     ; q |= 1
+            orr  r3, r3, r8                     ; q |= 1
 
-		if_end_udiv:
-		add r6, r6, #1 ; i++
-		b for_udiv
+        if_end_udiv:
+        add r6, r6, #1                          ; i++
+        b for_udiv
 
-	for_end_udiv:
-	mov  r0, r2    ; Return q - Retorna a parte baixa do registo
-    movt r1, r3    ; Return q - Retorna a parte alta do registo
+    for_end_udiv:
+    mov  r0, r2                                 ; Return q - Retorna a parte baixa do registo
+    movt r1, r3                                 ; Return q - Retorna a parte alta do registo
 
-	pop r4
-	pop r5
-	pop r6
-	pop r7
-	pop r8
-	mov pc, lr  ; Função folha
+    pop r4
+    pop r5
+    pop r6
+    pop r7
+    pop r8
+    mov pc, lr                                  ; Função folha
 
 ;----------------------------------------------------------------
 ;   Variáveis Definidas
@@ -399,7 +399,7 @@ avg2:
 ;   Stack_top 
 ;----------------------------------------------------------------
     .section    .stack
-    .space      32 ; //TODO: Reduzir a pedido do Nélio e com razão
+    .space      32
 stack_top:
 
 ;----------------------------------------------------------------
