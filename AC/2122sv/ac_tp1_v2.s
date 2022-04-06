@@ -12,7 +12,7 @@
 ;   Respostas
 ;
 ;   1b. Cada instrução do P16 ocupa 16 bits. A função em questão, está a utilizar 36 instruções logo a quantidade de memória ocupada em bits é dada por:
-;		36*16 bits = 576 bits ou 576/8 = 72 bytes.
+;		41*16 bits = 656 bits ou 656/8 = 82 bytes.
 ;
 ;   2a. INT16_MIN e INT16_MAX são variáveis a 16 bits com sinal, portanto os seus valores mínimos e máximo são dados por, respetivamente, -32768 e 32767.
 ;   2b. Existem duas formas de maneira a que os seus valores sejam facilmente editáveis, por definção em .equ e por declaração de valor em memória.
@@ -35,6 +35,8 @@
     .equ    INT8_MAX,   0x7F    ; 127       -> int8_t
     .equ    INT16_MIN,  0x8000  ; -32768    -> int16_t
     .equ    INT16_MAX,  0x7FFF  ; 32767     -> int16_t
+	.equ    MASK_80,    0x8000   
+	.equ    MASK_FF,    0xFFFF
 
 ;----------------------------------------------------------------
 ;   Startup
@@ -167,11 +169,11 @@ function_average:
         mov r0, r4                            ; r0 = acc. r1 não foi estragado
 		bl udiv						          ; chama a função udiv para fazer a divisão com numero positivo
         ; //TODO: Perguntar: uavg é 16bit mas udiv retorna um par de registos (32bit)...
-        mov r2, r0                            ; r5 = avg
+        mov r2, r0                            ; r2 = avg
 		
 		if_neg_function_average:
             mov r3, #1
-			cmp r5, r3					      ; r5-r4 (neg - 1)
+			cmp r5, r3					      ; r5-r3 (neg - 1)
 			bne if_neg_end_function_average   ; testa se neg é 0 (positivo). se positivo, salta para if_end_3, se negativo, continua
 			mvn r2, r2					      ; faz o complementar do resultado da média, uma vez que o return do summation era negativo, a media tambem será
 			add r2, r2, #1				      ; termina o complementar
@@ -304,7 +306,7 @@ INT16_MIN_Value_addr:
 ;             r6 - i
 ;             r7 - 16
 ;             r8 - temp
-;			  r9 - mascara
+;			    r9 - mascara
 ;----------------------------------------------------------------
 ;   Situação: Resolvido [Falta confirmação]
 ;----------------------------------------------------------------
@@ -335,8 +337,9 @@ function_udiv:
         sbc r3, r3, r5 ; //TODO: Confirmar se funciona Nelson - Lá está, esta não consigo confirmar, mas aparentemente seria isto.
 
 		if_udiv: 
-            lsr r8, r3, #8 ; Meter os 8 últimos bits para os primeiros 8 bits //TODO: Confirmar com o professor
-            and r8, r8, #0x80 ; verificar se é número negativo ou positivo //TODO: Refazer
+            mov r8, #MASK_80 & 0xFF			  ; carrega parte byte baixo
+			movt r8, #MASK_80 >> 8 & 0xFF	      ; carrega parte byte alto
+            and r8, r3, r8 ; verificar se é número negativo ou positivo
 			bzs else_udiv  ; q >= 0 ----------> beq!!!!! (1 com 0 = 0) salta fora!!! Nelson - LOL, BEQ=BZS :D 
 			add r2, r2, r4 ; q = q + shf_d
             adc r3, r3, r5
@@ -344,14 +347,10 @@ function_udiv:
 
 		else_udiv: 
             ; //TODO: Refazer
-			orr  r2, r2, #0xFF ; q |= 1
-            lsr  r8, r2, #8
-            orr  r8, r8, #0xFF
-            movt r2, r8
-            orr  r3, r3, #0xFF ; q |= 1
-            lsr  r8, r3, #8
-            orr  r8, r8, #0xFF
-            movt r3, r8
+			mov r8, #MASK_FF & 0xFF			  ; carrega parte byte baixo
+			movt r8, #MASK_FF >> 8 & 0xFF	      ; carrega parte byte alto
+			orr  r2, r2, r8; q |= 1
+			orr  r3, r3, r8; q |= 1
 
 		if_end_udiv:
 		add r6, r6, #1 ; i++
@@ -400,7 +399,7 @@ avg2:
 ;   Stack_top 
 ;----------------------------------------------------------------
     .section    .stack
-    .space      1024 ; //TODO: Reduzir a pedido do Nélio e com razão
+    .space      32 ; //TODO: Reduzir a pedido do Nélio e com razão
 stack_top:
 
 ;----------------------------------------------------------------
