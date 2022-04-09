@@ -41,7 +41,6 @@
     .equ    INT8_MAX,   0x7F    ; 127       -> int8_t
     .equ    INT16_MIN,  0x8000  ; -32768    -> int16_t
     .equ    INT16_MAX,  0x7FFF  ; 32767     -> int16_t
-    .equ    MASK_80,    0x8000  ; Máscara para bit de maior peso
     .equ    MASK_FF,    0xFFFF  ; Máscara para orr bit a bit 1
 
 ;----------------------------------------------------------------
