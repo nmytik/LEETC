@@ -29,6 +29,10 @@
 ; função average.
 ;   3b. INT8_MAX é uma variável a 8 bits com sinal e por isso o seu valor máximo é de 127.
 ;----------------------------------------------------------------
+;
+;   No decorrer deste programa foram utilizados diversos métodos e conceitos abordados pelo docente Jorge Fonseca até ao momento.
+;
+;----------------------------------------------------------------
 
 ;----------------------------------------------------------------
 ;   Defines
@@ -82,7 +86,7 @@ main:
     bl  function_average
     mov r2, r0            ; avg1 = average
     ldr r0, avg1_addr     ; Endereço da variável global avg1
-    strb r2, [r0, #0]     ; Armazenar valor
+    strb r2, [r0, #0]     ; Armazenar valor 
 
     ; avg2
     ldr r0, array2_addr   ; Carregar endereço do array2
@@ -151,7 +155,7 @@ function_average:
 
     if_function_average:
         mov r4, r0                            ; acc = return do summation
-        mov r3, #INT16_MAX & 0xFF             ; Carrega parte byte baixo
+        mov r3,  #INT16_MAX & 0xFF            ; Carrega parte byte baixo
         movt r3, #INT16_MAX >> 8 & 0xFF       ; Carrega parte byte alto
         cmp r4, r3                            ; Compara acc=return do summation com int16_max
         beq if_end_function_average           ; Caso seja igual, salta para o fim, porque o resultado vai sair fora de dominio (?)
@@ -197,7 +201,8 @@ function_average:
 ;
 ;        for(uint16_t i = 0; i < n && error == 0; i++){
 ;            int16_t e = a[i];
-;            if ((e < INT16_MIN - acc) || (e > INT16_MAX - acc)){
+;            // OLD: if ((e < INT16_MIN - acc) || (e > INT16_MAX - acc)){
+;            if ((acc < 0 && e < INT16_MIN - acc) || (acc > 0 && e > INT16_MAX - acc)){
 ;                error = 1;
 ;            }else{
 ;                acc = acc + e;
@@ -238,18 +243,25 @@ function_summation:
         movt r5, #0                                     ; Meter a parte alta a zeros porque "e" é int16
         
         if_function_summation_infor:
-            ldr r6, INT16_MAX_Value_addr                ; Carregar valor de 16 para um registo
+            sub r3, r3, #0                              ; acc < 0
+            bge cond2_function_summation_infor
+            ldr r6, INT16_MIN_Value_addr                ; Carregar valor de 16 para um registo
             ldr r6, [r6, #0]
             sub r6, r6, r3                              ; INT16 - acc
             cmp r5, r6
-            blt if_infor_condtrue_function_summation    ; Para fazer o OR na função
-            ldr r6, INT16_MIN_Value_addr
-            ldr r6, [r6, #0]
-            sub r6, r6, r3
-            cmp r6, r5                                  ; Trocar os operandos porque não existe <= no P16
-            bhs else_infor_function_summation
+            blt infor_condtrue_function_summation       ; Para fazer o OR na função
 
-            if_infor_condtrue_function_summation:
+            cond2_function_summation_infor:
+                mov r6, #0
+                cmp r6, r3                              ; acc > 0
+                bge else_infor_function_summation
+                ldr r6, INT16_MAX_Value_addr
+                ldr r6, [r6, #0]
+                sub r6, r6, r3
+                cmp r6, r5                              ; Trocar os operandos porque não existe <= no P16
+                bge else_infor_function_summation
+
+            infor_condtrue_function_summation:
                 mov r2, #1                              ; error = 1
                 b   if_infor_end_function_summation
 
@@ -271,9 +283,9 @@ function_summation:
     if_err_end_function_summation:
     mov r0, r3                                          ; Retornar acc
 
-    pop r4
-    pop r5
     pop r6
+    pop r5
+    pop r4
     mov pc, lr                                          ; Função folha
 
 INT16_MAX_Value_addr:
@@ -289,7 +301,7 @@ INT16_MIN_Value_addr:
 ;        uint32_t shf_d = ((uint32_t) d) << 16;
 ;
 ;        for(uint8_t i = 0; i < 16; i++){
-;            q <<= 1;
+;            q <<= 1
 ;            q -= shf_d;
 ;            if(q < 0){
 ;                q += shf_d;
@@ -307,9 +319,8 @@ INT16_MIN_Value_addr:
 ;             r6 - i
 ;             r7 - 16
 ;             r8 - temp
-;               r9 - mascara
 ;----------------------------------------------------------------
-;   Situação: Resolvido [Falta confirmação]
+;   Situação: Resolvido [&Verificado]
 ;----------------------------------------------------------------
 function_udiv:
     push lr
@@ -321,8 +332,8 @@ function_udiv:
 
     mov  r2, r0                                 ; Move D para a parte baixa do registo r3:r2 ; int32_t q = D;
     movt r3, #0                                 ; Preenche a zeros a parte alta do registo r3:r2
-    mov  r5, r1                                 ; Mover a parte alta do registo r5:r4 ; uint32_t shf_d = ((uint32_t) d) << 16
-    movt r4, #0                                 ; Preenche a zeros a parte alta do registo r5:r4
+    mov  r5, r1                                 ; Mover r1 para a parte alta do registo r5:r4 <=> <<16 
+    movt r4, #0                                 ; Preenche a zeros a parte baixa do registo r5:r4
 
     mov r6, #0                                  ; i = 0
     mov r7, #16                                 ; r7 = 16
@@ -338,16 +349,14 @@ function_udiv:
         sbc r3, r3, r5                          
 
         if_udiv: 
-            mov r8, #MASK_80 & 0xFF             ; Carrega parte byte baixo
-            movt r8, #MASK_80 >> 8 & 0xFF       ; Carrega parte byte alto
-            and r8, r3, r8                      ; Verificar se é número negativo ou positivo
-            bzs else_udiv                       ; q >= 0 -> beq! (1 com 0 = 0) salta fora!!! Nelson - LOL, BEQ=BZS :D 
+            cmp r3, r8
+            bge else_udiv                       ; q >= 0 salta fora
             add r2, r2, r4                      ; q = q + shf_d
-            adc r3, r3, r5
+            adc r3, r3, r5                      ; Soma as partes altas com o carry (se existir)
             b   if_end_udiv
 
         else_udiv: 
-            mov r8, #MASK_FF & 0xFF             ; Carrega parte byte baixo
+            mov r8,  #MASK_FF & 0xFF            ; Carrega parte byte baixo
             movt r8, #MASK_FF >> 8 & 0xFF       ; Carrega parte byte alto
             orr  r2, r2, r8                     ; q |= 1
             orr  r3, r3, r8                     ; q |= 1
@@ -359,11 +368,11 @@ function_udiv:
     for_end_udiv:
     mov  r0, r2                                 ; Return q - Retorna a parte baixa do registo
 
-    pop r4
-    pop r5
-    pop r6
-    pop r7
     pop r8
+    pop r7
+    pop r6
+    pop r5
+    pop r4
     mov pc, lr                                  ; Função folha
 
 ;----------------------------------------------------------------
