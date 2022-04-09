@@ -358,7 +358,6 @@ function_udiv:
 
     for_end_udiv:
     mov  r0, r2                                 ; Return q - Retorna a parte baixa do registo
-    movt r1, r3                                 ; Return q - Retorna a parte alta do registo
 
     pop r4
     pop r5
