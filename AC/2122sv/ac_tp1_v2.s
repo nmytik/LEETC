@@ -41,7 +41,7 @@
     .equ    INT8_MAX,   0x7F    ; 127       -> int8_t
     .equ    INT16_MIN,  0x8000  ; -32768    -> int16_t
     .equ    INT16_MAX,  0x7FFF  ; 32767     -> int16_t
-    .equ    MASK_01,    0x0001  ; Máscara para OR bit a bit com 1
+    .equ    MASK_01,    0x0001  ; Máscara para OR bit a bit com 1                                                                   ****
 
 ;----------------------------------------------------------------
 ;   Startup
@@ -53,7 +53,7 @@
 _start:
     ldr sp, addr_stack
     bl  main
-    b   .
+    b   .               ; // while(1);  
 
 addr_stack:
     .word   stack_top
@@ -95,7 +95,7 @@ main:
     ldr r0, avg2_addr
     strb r2, [r0, #0]
 
-    b   .                 ; // while(1);
+    ;b   .                 ; // while(1);                                                                                           ****
     
     pop pc
 
@@ -355,10 +355,10 @@ function_udiv:
             b   if_end_udiv
 
         else_udiv: 
-            mov r8,  #MASK_01 & 0xFF            ; Carrega parte byte baixo
-            movt r8, #MASK_01 >> 8 & 0xFF       ; Carrega parte byte alto
+            mov r8,  #MASK_01 & 0xFF            ; Carrega parte byte baixo                                                          ****
+            movt r8, #MASK_01 >> 8 & 0xFF       ; Carrega parte byte alto                                                           ****
             orr  r2, r2, r8                     ; q |= 1
-            ;orr  r3, r3, r8                     ; q |= 1 Sendo OR com 1, não necessita fazer OR da parte alta ***
+            ;orr  r3, r3, r8                     ; q |= 1 Sendo OR com 1, não necessita fazer OR da parte alta                      ****
 
         if_end_udiv:
         add r6, r6, #1                          ; i++
