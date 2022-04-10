@@ -325,7 +325,7 @@ INT16_MIN_Value_addr:
 ;   Situação: Resolvido [&Verificado]
 ;----------------------------------------------------------------
 function_udiv:
-    push lr
+    ;push lr                                    ; (Desabilitado porque não faz POP)                                                 **** NN
     push r4
     push r5
     push r6
