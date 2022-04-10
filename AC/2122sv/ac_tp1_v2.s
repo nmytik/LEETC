@@ -358,7 +358,7 @@ function_udiv:
             mov r8,  #MASK_01 & 0xFF            ; Carrega parte byte baixo
             movt r8, #MASK_01 >> 8 & 0xFF       ; Carrega parte byte alto
             orr  r2, r2, r8                     ; q |= 1
-            orr  r3, r3, r8                     ; q |= 1
+            ;orr  r3, r3, r8                     ; q |= 1 Sendo OR com 1, não necessita fazer OR da parte alta ***
 
         if_end_udiv:
         add r6, r6, #1                          ; i++
