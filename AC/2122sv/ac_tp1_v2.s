@@ -41,7 +41,7 @@
     .equ    INT8_MAX,   0x7F    ; 127       -> int8_t
     .equ    INT16_MIN,  0x8000  ; -32768    -> int16_t
     .equ    INT16_MAX,  0x7FFF  ; 32767     -> int16_t
-    .equ    MASK_FF,    0xFFFF  ; Máscara para orr bit a bit 1
+    .equ    MASK_01,    0x0001  ; Máscara para OR bit a bit com 1
 
 ;----------------------------------------------------------------
 ;   Startup
@@ -355,8 +355,8 @@ function_udiv:
             b   if_end_udiv
 
         else_udiv: 
-            mov r8,  #MASK_FF & 0xFF            ; Carrega parte byte baixo
-            movt r8, #MASK_FF >> 8 & 0xFF       ; Carrega parte byte alto
+            mov r8,  #MASK_01 & 0xFF            ; Carrega parte byte baixo
+            movt r8, #MASK_01 >> 8 & 0xFF       ; Carrega parte byte alto
             orr  r2, r2, r8                     ; q |= 1
             orr  r3, r3, r8                     ; q |= 1
 
