@@ -224,6 +224,7 @@ function_average:
 ;   Situação: Resolvido [&Verificado]
 ;----------------------------------------------------------------
 function_summation:
+    push lr
     push r4
     push r5
     push r6
@@ -285,7 +286,7 @@ function_summation:
     pop r6
     pop r5
     pop r4
-    mov pc, lr                                          ; Função folha
+    pop pc                                         ; Função folha
 
 INT16_MAX_Value_addr:
     .word   INT16_MAX_Value
