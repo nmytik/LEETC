@@ -242,7 +242,7 @@ function_summation:
         ldrb r5, [r0, r4]                               ; e = a[i]
         lsl r5, r5, #8                                  ; Move os 8 bits da direita para a esquerda                 **** NN
         asr r5, r5, #8			                        ; Move os 8 bits agora na esquerda, de volta para a direita mas mantendo o sinal (bit 15 mantem o valor/sinal) **** NN
-        ;movt r5, #0                                     ; Meter a parte alta a zeros porque "e" é int16            **** NN
+        ;movt r5, #0                                    ; Meter a parte alta a zeros porque "e" é int16            **** NN
         
         if_function_summation_infor:
             sub r3, r3, #0                              ; acc < 0
@@ -272,7 +272,7 @@ function_summation:
         
         if_infor_end_function_summation:
         add r4, r4, #1                                  ; i++
-        b   for_end_function_summation
+        b   for_function_summation
 
     for_end_function_summation:
     if_err_function_summation:
@@ -337,38 +337,38 @@ function_udiv:
     mov  r5, r1                                 ; Mover r1 para a parte alta do registo r5:r4 <=> <<16 
     movt r4, #0                                 ; Preenche a zeros a parte baixa do registo r5:r4
 
-    mov r6, #0                                  ; i = 0
-    mov r7, #16                                 ; r7 = 16
+    mov r6, #0                                  ; Registo R6 para i = 0
+    mov r7, #16                                 ; Registo R7 para i = 16
 
     for_udiv:
-        cmp r6, r7                              ; i - 16
-        bhs for_end_udiv                        ; i >= 16
+        cmp r6, r7                              ; Compara o valor de i com 16
+        bhs for_end_udiv                        ; Caso i >= 16, a condição do if é falsa, logo avança para o fim do ciclo for
         lsl r3, r3, #1                          ; Fazer o shift primeiro na parte alta
         lsl r2, r2, #1                          ; Fazer o shift da parte baixa
         mov r8, #0  
         adc r3, r3, r8                          ; Adicionar a carry à parte alta do registo
-        sub r2, r2, r4                          ; q = q - shf_d
-        sbc r3, r3, r5                          
+        sub r2, r2, r4                          ; Subtrair a parte baixa do registo q com a parte baixa do registo shf_d
+        sbc r3, r3, r5                          ; Subtrair a parte alta do registo q com a parte alta do registo shf_d, tendo em consideração a existência de carry.
 
         if_udiv: 
             cmp r3, r8
-            bge else_udiv                       ; q >= 0 salta fora
-            add r2, r2, r4                      ; q = q + shf_d
-            adc r3, r3, r5                      ; Soma as partes altas com o carry (se existir)
+            bge else_udiv                       ; Caso q >= 0, a condição do if é falsa logo avança para o else 
+            add r2, r2, r4                      ; Adicionar a parte baixa do registo q com a parte baixa do registo shf_d
+            adc r3, r3, r5                      ; Adicionar a parte alta do registo q com a parte alta do registo shf_d, tendo em consideração a existência de carry.
             b   if_end_udiv
 
         else_udiv: 
             mov r8,  #MASK_01 & 0xFF            ; Carrega parte byte baixo                                                          **** NN
             movt r8, #MASK_01 >> 8 & 0xFF       ; Carrega parte byte alto                                                           **** NN
-            orr  r2, r2, r8                     ; q |= 1
-            ;orr  r3, r3, r8                     ; q |= 1 Sendo OR com 1, não necessita fazer OR da parte alta                      **** NN
+            orr  r2, r2, r8                     ; OR bit a bit da parte baixa com um registo preenchido a 1s.
+            ;orr  r3, r3, r8                    ; q |= 1 Sendo OR com 1, não necessita fazer OR da parte alta                      **** NN
 
         if_end_udiv:
         add r6, r6, #1                          ; i++
         b for_udiv
 
     for_end_udiv:
-    mov  r0, r2                                 ; Return q - Retorna a parte baixa do registo
+    mov  r0, r2                                 ; Retorna a parte baixa do registo
 
     pop r8
     pop r7
