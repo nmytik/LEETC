@@ -41,7 +41,7 @@
     .equ    INT8_MAX,   0x7F    ; 127       -> int8_t
     .equ    INT16_MIN,  0x8000  ; -32768    -> int16_t
     .equ    INT16_MAX,  0x7FFF  ; 32767     -> int16_t
-    .equ    MASK_01,    0x0001  ; Máscara para OR bit a bit com 1                                                                   ****
+    .equ    MASK_01,    0x0001  ; Máscara para OR bit a bit com 1                                                                   **** NN
 
 ;----------------------------------------------------------------
 ;   Startup
@@ -95,7 +95,7 @@ main:
     ldr r0, avg2_addr
     strb r2, [r0, #0]
 
-    ;b   .                 ; // while(1);                                                                                           ****
+    ;b   .                 ; // while(1);                                                                                           **** NN
     
     pop pc
 
@@ -240,7 +240,9 @@ function_summation:
         bne for_end_function_summation
 
         ldrb r5, [r0, r4]                               ; e = a[i]
-        movt r5, #0                                     ; Meter a parte alta a zeros porque "e" é int16
+        lsl r5, r5, #8                                  ; Move os 8 bits da direita para a esquerda                 **** NN
+        asr r5, r5, #8			                        ; Move os 8 bits agora na esquerda, de volta para a direita mas mantendo o sinal (bit 15 mantem o valor/sinal) **** NN
+        ;movt r5, #0                                     ; Meter a parte alta a zeros porque "e" é int16            **** NN
         
         if_function_summation_infor:
             sub r3, r3, #0                              ; acc < 0
@@ -356,10 +358,10 @@ function_udiv:
             b   if_end_udiv
 
         else_udiv: 
-            mov r8,  #MASK_01 & 0xFF            ; Carrega parte byte baixo                                                          ****
-            movt r8, #MASK_01 >> 8 & 0xFF       ; Carrega parte byte alto                                                           ****
+            mov r8,  #MASK_01 & 0xFF            ; Carrega parte byte baixo                                                          **** NN
+            movt r8, #MASK_01 >> 8 & 0xFF       ; Carrega parte byte alto                                                           **** NN
             orr  r2, r2, r8                     ; q |= 1
-            ;orr  r3, r3, r8                     ; q |= 1 Sendo OR com 1, não necessita fazer OR da parte alta                      ****
+            ;orr  r3, r3, r8                     ; q |= 1 Sendo OR com 1, não necessita fazer OR da parte alta                      **** NN
 
         if_end_udiv:
         add r6, r6, #1                          ; i++
