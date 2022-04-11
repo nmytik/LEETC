@@ -14,7 +14,7 @@
 ;   Respostas
 ;
 ;   1b. Cada instrução do P16 ocupa 16 bits. A função em questão, está a utilizar 36 instruções logo a quantidade de memória ocupada em bytes é dada por:
-;       40*2 = 80 bytes, dado que 16 bits = 2 bytes.
+;       37*2 = 74 bytes, dado que 16 bits = 2 bytes.
 ;
 ;   2a. INT16_MIN e INT16_MAX são variáveis a 16 bits com sinal, portanto os seus valores mínimos e máximo são dados por, respetivamente, -32768 e 32767.
 ;   2b. Existem duas formas de maneira a que os seus valores sejam facilmente editáveis, por definção em .equ e por declaração de valor em memória.
@@ -41,7 +41,8 @@
     .equ    INT8_MAX,   0x7F    ; 127       -> int8_t
     .equ    INT16_MIN,  0x8000  ; -32768    -> int16_t
     .equ    INT16_MAX,  0x7FFF  ; 32767     -> int16_t
-    .equ    MASK_01,    0x0001  ; Máscara para OR bit a bit com 1                                                                   **** NN
+    .equ	MASK_08,    0x8000  ; 
+	.equ    MASK_01,    0x0001  ; Máscara para OR bit a bit com 1                                                                   **** NN
 
 ;----------------------------------------------------------------
 ;   Startup
@@ -53,7 +54,7 @@
 _start:
     ldr sp, addr_stack
     bl  main
-    b   .               ; // while(1);  
+    b   .    
 
 addr_stack:
     .word   stack_top
@@ -95,7 +96,7 @@ main:
     ldr r0, avg2_addr
     strb r2, [r0, #0]
 
-    ;b   .                 ; // while(1);                                                                                           **** NN
+    b   .                 ; // while(1);                                                                                           **** NN
     
     pop pc
 
@@ -242,7 +243,6 @@ function_summation:
         ldrb r5, [r0, r4]                               ; e = a[i]
         lsl r5, r5, #8                                  ; Move os 8 bits da direita para a esquerda                 **** NN
         asr r5, r5, #8			                        ; Move os 8 bits agora na esquerda, de volta para a direita mas mantendo o sinal (bit 15 mantem o valor/sinal) **** NN
-        ;movt r5, #0                                    ; Meter a parte alta a zeros porque "e" é int16            **** NN
         
         if_function_summation_infor:
             sub r3, r3, #0                              ; acc < 0
@@ -325,7 +325,6 @@ INT16_MIN_Value_addr:
 ;   Situação: Resolvido [&Verificado]
 ;----------------------------------------------------------------
 function_udiv:
-    ;push lr                                    ; (Desabilitado porque não faz POP)                                                 **** NN
     push r4
     push r5
     push r6
@@ -341,7 +340,7 @@ function_udiv:
     mov r7, #16                                 ; Registo R7 para i = 16
 
     for_udiv:
-        cmp r6, r7                              ; Compara o valor de i com 16
+		cmp r6, r7                              ; Compara o valor de i com 16
         bhs for_end_udiv                        ; Caso i >= 16, a condição do if é falsa, logo avança para o fim do ciclo for
         lsl r3, r3, #1                          ; Fazer o shift primeiro na parte alta
         lsl r2, r2, #1                          ; Fazer o shift da parte baixa
@@ -351,17 +350,17 @@ function_udiv:
         sbc r3, r3, r5                          ; Subtrair a parte alta do registo q com a parte alta do registo shf_d, tendo em consideração a existência de carry.
 
         if_udiv: 
-            cmp r3, r8
-            bge else_udiv                       ; Caso q >= 0, a condição do if é falsa logo avança para o else 
-            add r2, r2, r4                      ; Adicionar a parte baixa do registo q com a parte baixa do registo shf_d
-            adc r3, r3, r5                      ; Adicionar a parte alta do registo q com a parte alta do registo shf_d, tendo em consideração a existência de carry.
-            b   if_end_udiv
+        mov r8,  #MASK_08 & 0xFF            ; Carrega parte byte baixo
+        movt r8, #MASK_08 >> 8 & 0xFF       ; Carrega parte byte alto
+		and r8, r8, r3
+        bzs else_udiv                       ; Caso q >= 0, a condição do if é falsa logo avança para o else 
+        add r2, r2, r4                      ; Adicionar a parte baixa do registo q com a parte baixa do registo shf_d
+        adc r3, r3, r5                      ; Adicionar a parte alta do registo q com a parte alta do registo shf_d, tendo em consideração a existência de carry.
+        b   if_end_udiv
 
         else_udiv: 
-            mov r8,  #MASK_01 & 0xFF            ; Carrega parte byte baixo                                                          **** NN
-            movt r8, #MASK_01 >> 8 & 0xFF       ; Carrega parte byte alto                                                           **** NN
-            orr  r2, r2, r8                     ; OR bit a bit da parte baixa com um registo preenchido a 1s.
-            ;orr  r3, r3, r8                    ; q |= 1 Sendo OR com 1, não necessita fazer OR da parte alta                      **** NN
+            mov r8, #MASK_01            ; Carrega parte byte baixo                                                          **** NN
+            orr r2, r2, r8                     ; OR bit a bit da parte baixa com um registo preenchido a 1s.
 
         if_end_udiv:
         add r6, r6, #1                          ; i++
