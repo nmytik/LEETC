@@ -319,8 +319,8 @@ INT16_MIN_Value_addr:
 ;             [r3:r2] - q
 ;             [r5:r4] - shf_d
 ;             r6 - i
-;             r7 - 16
-;             r8 - temp
+;             r7 - temp													**** NN **** Trocado R7 com R8
+;             r8 - 16													**** NN **** Trocado R7 com R8
 ;----------------------------------------------------------------
 ;   Situação: Resolvido [&Verificado]
 ;----------------------------------------------------------------
@@ -331,36 +331,36 @@ function_udiv:
     push r7
     push r8
 
-    mov  r2, r0                                 ; Move D para a parte baixa do registo r3:r2 ; int32_t q = D;
-    movt r3, #0                                 ; Preenche a zeros a parte alta do registo r3:r2
-    mov  r5, r1                                 ; Mover r1 para a parte alta do registo r5:r4 <=> <<16 
-    movt r4, #0                                 ; Preenche a zeros a parte baixa do registo r5:r4
+    mov r2, r0                                 ; Move D para a parte baixa do registo r3:r2 ; int32_t q = D;
+    mov r3, #0                                 ; Preenche a zeros a parte alta do registo r3:r2				**** NN **** Alterado para mov
+    mov r5, r1                                 ; Mover r1 para a parte alta do registo r5:r4 <=> <<16 
+    mov r4, #0                                 ; Preenche a zeros a parte baixa do registo r5:r4			**** NN **** Alterado para mov
 
     mov r6, #0                                  ; Registo R6 para i = 0
-    mov r7, #16                                 ; Registo R7 para i = 16
+    mov r8, #16                                 ; Registo R8 para i = 16
 
     for_udiv:
-		cmp r6, r7                              ; Compara o valor de i com 16
+		cmp r6, r8                              ; Compara o valor de i com 16
         bhs for_end_udiv                        ; Caso i >= 16, a condição do if é falsa, logo avança para o fim do ciclo for
         lsl r3, r3, #1                          ; Fazer o shift primeiro na parte alta
         lsl r2, r2, #1                          ; Fazer o shift da parte baixa
-        mov r8, #0  
-        adc r3, r3, r8                          ; Adicionar a carry à parte alta do registo
+        mov r7, #0  
+        adc r3, r3, r7                          ; Adicionar a carry à parte alta do registo
         sub r2, r2, r4                          ; Subtrair a parte baixa do registo q com a parte baixa do registo shf_d
         sbc r3, r3, r5                          ; Subtrair a parte alta do registo q com a parte alta do registo shf_d, tendo em consideração a existência de carry.
 
         if_udiv: 
-        mov r8,  #MASK_08 & 0xFF            ; Carrega parte byte baixo
-        movt r8, #MASK_08 >> 8 & 0xFF       ; Carrega parte byte alto
-		and r8, r8, r3
+        mov r7,  #MASK_08 & 0xFF            ; Carrega parte byte baixo
+        movt r7, #MASK_08 >> 8 & 0xFF       ; Carrega parte byte alto
+		and r7, r7, r3
         bzs else_udiv                       ; Caso q >= 0, a condição do if é falsa logo avança para o else 
         add r2, r2, r4                      ; Adicionar a parte baixa do registo q com a parte baixa do registo shf_d
         adc r3, r3, r5                      ; Adicionar a parte alta do registo q com a parte alta do registo shf_d, tendo em consideração a existência de carry.
         b   if_end_udiv
 
         else_udiv: 
-            mov r8, #MASK_01            ; Carrega parte byte baixo                                                          **** NN
-            orr r2, r2, r8                     ; OR bit a bit da parte baixa com um registo preenchido a 1s.
+            mov r7, #MASK_01            ; Carrega parte byte baixo                                                          **** NN
+            orr r2, r2, r7                     ; OR bit a bit da parte baixa com um registo preenchido a 1s.
 
         if_end_udiv:
         add r6, r6, #1                          ; i++
