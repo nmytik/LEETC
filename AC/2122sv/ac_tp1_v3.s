@@ -14,7 +14,7 @@
 ;   Respostas
 ;
 ;   1b. Cada instrução do P16 ocupa 16 bits. A função em questão, está a utilizar 36 instruções logo a quantidade de memória ocupada em bytes é dada por:
-;       41*2 = 82 bytes, dado que 16 bits = 2 bytes.
+;       43*2 = 86 bytes, dado que 16 bits = 2 bytes.
 ;
 ;   2a. INT16_MIN e INT16_MAX são variáveis a 16 bits com sinal, portanto os seus valores mínimos e máximo são dados por, respetivamente, -32768 e 32767.
 ;   2b. Existem duas formas de maneira a que os seus valores sejam facilmente editáveis, por definção em .equ e por declaração de valor em memória.
