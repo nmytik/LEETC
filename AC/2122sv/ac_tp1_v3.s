@@ -322,6 +322,7 @@ INT16_MIN_Value_addr:
 ;             r8 - 16
 ;             r9 - MASK_01
 ;             r10 - 0
+;             r11 - temp
 ;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ;   Situação: Resolvido [&Verificado]
 ;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -333,6 +334,7 @@ function_udiv:
     push r8
     push r9
     push r10
+    push r11
 
     mov r2, r0                    ; Move D para a parte baixa do registo r3:r2 ; int32_t q = D;
     mov r3, #0                    ; Preenche a zeros a parte alta do registo r3:r2
@@ -356,7 +358,7 @@ function_udiv:
         sbc r3, r3, r5            ; Subtrair a parte alta do registo q com a parte alta do registo shf_d, tendo em consideração a existência de carry.
 
         if_udiv: 
-            and r7, r7, r3        ; Determina se a parte alta do registo de 32bits é negativo ou positivo
+            and r11, r7, r3       ; Determina se a parte alta do registo de 32bits é negativo ou positivo
             bzs else_udiv         ; Caso q >= 0, a condição do if é falsa logo avança para o else 
             add r2, r2, r4        ; Adicionar a parte baixa do registo q com a parte baixa do registo shf_d
             adc r3, r3, r5        ; Adicionar a parte alta do registo q com a parte alta do registo shf_d, tendo em consideração a existência de carry.
@@ -372,6 +374,7 @@ function_udiv:
     for_end_udiv:
     mov  r0, r2                   ; Retorna a parte baixa do registo
 
+    pop r11
     pop r10
     pop r9
     pop r8
