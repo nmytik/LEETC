@@ -41,8 +41,8 @@
     .equ    INT8_MAX,   0x7F    ; 127       -> int8_t
     .equ    INT16_MIN,  0x8000  ; -32768    -> int16_t
     .equ    INT16_MAX,  0x7FFF  ; 32767     -> int16_t
-    .equ	MASK_08,    0x8000  ; 
-	.equ    MASK_01,    0x0001  ; Máscara para OR bit a bit com 1                                                                   **** NN
+    .equ    MASK_08,    0x8000  ; Máscara para AND do bit maior peso
+    .equ    MASK_01,    0x0001  ; Máscara para OR bit a bit com 1
 
 ;----------------------------------------------------------------
 ;   Startup
@@ -96,7 +96,7 @@ main:
     ldr r0, avg2_addr
     strb r2, [r0, #0]
 
-    b   .                 ; // while(1);                                                                                           **** NN
+    b   .                 ; // while(1);
     
     pop pc
 
@@ -190,7 +190,7 @@ function_average:
 
     pop r5
     pop r4
-    pop pc
+    pop pc                                    ; Função não folha
 
 ;----------------------------------------------------------------
 ;   Função: summation
@@ -241,8 +241,8 @@ function_summation:
         bne for_end_function_summation
 
         ldrb r5, [r0, r4]                               ; e = a[i]
-        lsl r5, r5, #8                                  ; Move os 8 bits da direita para a esquerda                 **** NN
-        asr r5, r5, #8			                        ; Move os 8 bits agora na esquerda, de volta para a direita mas mantendo o sinal (bit 15 mantem o valor/sinal) **** NN
+        lsl r5, r5, #8                                  ; Move os 8 bits da direita para a esquerda
+        asr r5, r5, #8                                  ; Move os 8 bits agora na esquerda, de volta para a direita mas mantendo o sinal (bit 15 mantem o valor/sinal)
         
         if_function_summation_infor:
             sub r3, r3, #0                              ; acc < 0
@@ -319,8 +319,10 @@ INT16_MIN_Value_addr:
 ;             [r3:r2] - q
 ;             [r5:r4] - shf_d
 ;             r6 - i
-;             r7 - temp													**** NN **** Trocado R7 com R8
-;             r8 - 16													**** NN **** Trocado R7 com R8
+;             r7 - MASK_08
+;             r8 - 16
+;             r9 - MASK_01
+;             r10 - 0
 ;----------------------------------------------------------------
 ;   Situação: Resolvido [&Verificado]
 ;----------------------------------------------------------------
@@ -330,51 +332,55 @@ function_udiv:
     push r6
     push r7
     push r8
+    push r9
+    push r10
 
-    mov r2, r0                                 ; Move D para a parte baixa do registo r3:r2 ; int32_t q = D;
-    mov r3, #0                                 ; Preenche a zeros a parte alta do registo r3:r2				**** NN **** Alterado para mov
-    mov r5, r1                                 ; Mover r1 para a parte alta do registo r5:r4 <=> <<16 
-    mov r4, #0                                 ; Preenche a zeros a parte baixa do registo r5:r4			**** NN **** Alterado para mov
+    mov r2, r0                    ; Move D para a parte baixa do registo r3:r2 ; int32_t q = D;
+    mov r3, #0                    ; Preenche a zeros a parte alta do registo r3:r2
+    mov r5, r1                    ; Mover r1 para a parte alta do registo r5:r4 <=> <<16 
+    mov r4, #0                    ; Preenche a zeros a parte baixa do registo r5:r4
 
-    mov r6, #0                                  ; Registo R6 para i = 0
-    mov r8, #16                                 ; Registo R8 para i = 16
+    mov r6,  #0                   ; Registo R6 para i = 0
+    mov r7,  #MASK_08 & 0xFF      ; Carrega parte byte baixo
+    movt r7, #MASK_08 >> 8 & 0xFF ; Carrega parte byte alto
+    mov r8,  #16                  ; Registo R8 para i = 16
+    mov r9,  #MASK_01             ; Carrega parte byte baixo
+    mov r10, #0  
 
     for_udiv:
-		cmp r6, r8                              ; Compara o valor de i com 16
-        bhs for_end_udiv                        ; Caso i >= 16, a condição do if é falsa, logo avança para o fim do ciclo for
-        lsl r3, r3, #1                          ; Fazer o shift primeiro na parte alta
-        lsl r2, r2, #1                          ; Fazer o shift da parte baixa
-        mov r7, #0  
-        adc r3, r3, r7                          ; Adicionar a carry à parte alta do registo
-        sub r2, r2, r4                          ; Subtrair a parte baixa do registo q com a parte baixa do registo shf_d
-        sbc r3, r3, r5                          ; Subtrair a parte alta do registo q com a parte alta do registo shf_d, tendo em consideração a existência de carry.
+        cmp r6, r8                ; Compara o valor de i com 16
+        bhs for_end_udiv          ; Caso i >= 16, a condição do if é falsa, logo avança para o fim do ciclo for
+        lsl r3, r3, #1            ; Fazer o shift primeiro na parte alta
+        lsl r2, r2, #1            ; Fazer o shift da parte baixa
+        adc r3, r3, r10           ; Adicionar a carry à parte alta do registo somando r3 com 0
+        sub r2, r2, r4            ; Subtrair a parte baixa do registo q com a parte baixa do registo shf_d
+        sbc r3, r3, r5            ; Subtrair a parte alta do registo q com a parte alta do registo shf_d, tendo em consideração a existência de carry.
 
         if_udiv: 
-        mov r7,  #MASK_08 & 0xFF            ; Carrega parte byte baixo
-        movt r7, #MASK_08 >> 8 & 0xFF       ; Carrega parte byte alto
-		and r7, r7, r3
-        bzs else_udiv                       ; Caso q >= 0, a condição do if é falsa logo avança para o else 
-        add r2, r2, r4                      ; Adicionar a parte baixa do registo q com a parte baixa do registo shf_d
-        adc r3, r3, r5                      ; Adicionar a parte alta do registo q com a parte alta do registo shf_d, tendo em consideração a existência de carry.
-        b   if_end_udiv
+            and r7, r7, r3        ; Determina se a parte alta do registo de 32bits é negativo ou positivo
+            bzs else_udiv         ; Caso q >= 0, a condição do if é falsa logo avança para o else 
+            add r2, r2, r4        ; Adicionar a parte baixa do registo q com a parte baixa do registo shf_d
+            adc r3, r3, r5        ; Adicionar a parte alta do registo q com a parte alta do registo shf_d, tendo em consideração a existência de carry.
+            b   if_end_udiv
 
         else_udiv: 
-            mov r7, #MASK_01            ; Carrega parte byte baixo                                                          **** NN
-            orr r2, r2, r7                     ; OR bit a bit da parte baixa com um registo preenchido a 1s.
+            orr r2, r2, r9        ; OR bit a bit da parte baixa com um registo preenchido a 1s.
 
         if_end_udiv:
-        add r6, r6, #1                          ; i++
+        add r6, r6, #1            ; i++
         b for_udiv
 
     for_end_udiv:
-    mov  r0, r2                                 ; Retorna a parte baixa do registo
+    mov  r0, r2                   ; Retorna a parte baixa do registo
 
+    pop r10
+    pop r9
     pop r8
     pop r7
     pop r6
     pop r5
     pop r4
-    mov pc, lr                                  ; Função folha
+    mov pc, lr                    ; Função folha
 
 ;----------------------------------------------------------------
 ;   Variáveis Definidas
